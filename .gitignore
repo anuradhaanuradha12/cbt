@@ -26,3 +26,10 @@ Thumbs.db
 # Logs
 *.log
 npm-debug.log*
+
+# Migration scripts
+worker/download_hf.py
+worker/import-questions-local.mjs
+worker/import-questions.mjs
+worker/migrate-images.ts
+worker/restore-text.mjs
