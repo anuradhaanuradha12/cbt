@@ -33,6 +33,7 @@
    - Synchronized countdown timer
    - Question grid with standard color codes (Answered, Not Answered, Marked for Review, Not Visited)
    - MathJax integration for rendering LaTeX equations
+   - **Anti-Cheating Randomisation**: Client-side question order shuffling and MCQ option shuffling (without breaking the backend grading).
    - Bulk submission handling
 
 ### 5. Admin / Faculty Frontend (100% Complete)
@@ -50,8 +51,8 @@
 ✅ **Pre-Exam Waiting Room**: Students can enter the exam 5 minutes early to view instructions and a live countdown timer. A **Zero-Leak Policy** dynamically strips the question payload at the edge cache layer if accessed early, ensuring questions cannot be exposed via network inspection.
 ✅ **Automated Parent Reports**: Configured `[triggers]` CRON handlers inside the Cloudflare Worker to automatically dispatch weekly performance reports.
 
-## Pending Tasks
-1. **Cloudflare Deployment**: Run `npx wrangler deploy` to push the database, worker, and frontend to the global edge.
+## Completed Deployment
+✅ **Cloudflare Deployment**: Database schema pushed to live D1 instance, questions dataset bulk-imported to the edge, API Worker deployed, and R2 media fully seeded. Remote API is accessible at `https://cbt-worker.shishira-932.workers.dev`.
 
 ## Accessing Local Dev
 - **Worker API**: `http://127.0.0.1:8787`

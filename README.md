@@ -108,7 +108,7 @@ npm run dev
 
 ## Phase Roadmap
 
-- **Student Frontend**: 100% Complete. Highly polished, timed JEE-style interface featuring MathJax and synchronized state.
+- **Student Frontend**: 100% Complete. Highly polished, timed JEE-style interface featuring MathJax, synchronized state, and client-side anti-cheat question/option shuffling.
 - **Admin Frontend**: 100% Complete. Search 97,000+ question bank and assemble custom exams with a click.
 - **Analytics UI**: 100% Complete. Real-time dashboards (Average Score, Peak Engagement, Attempt details).
 - **Anti-Cheat**: 100% Complete. Strict 3-strike policy enforcing fullscreen, no dev tools, and no tab switching.

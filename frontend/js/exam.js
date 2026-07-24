@@ -140,6 +140,35 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (!questions || questions.length === 0) {
                 throw new Error("No questions available for this exam yet.");
             }
+
+            // 1. Shuffle Questions
+            for (let i = questions.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [questions[i], questions[j]] = [questions[j], questions[i]];
+            }
+
+            // 2. Pre-shuffle options for each MCQ so they remain consistent on re-renders
+            questions.forEach(q => {
+                if (q.type === 'mcq') {
+                    const originalKeys = ['option_a', 'option_b', 'option_c', 'option_d'];
+                    const originalLabels = ['A', 'B', 'C', 'D'];
+                    let opts = [];
+                    for (let i = 0; i < 4; i++) {
+                        if (q[originalKeys[i]]) {
+                            opts.push({ 
+                                originalLabel: originalLabels[i], 
+                                text: q[originalKeys[i]] 
+                            });
+                        }
+                    }
+                    // Shuffle the options
+                    for (let i = opts.length - 1; i > 0; i--) {
+                        const j = Math.floor(Math.random() * (i + 1));
+                        [opts[i], opts[j]] = [opts[j], opts[i]];
+                    }
+                    q.shuffledOptions = opts;
+                }
+            });
             
             // Initialize local state
             questionStatuses = new Array(questions.length).fill('not-visited');
@@ -230,24 +259,25 @@ document.addEventListener('DOMContentLoaded', async () => {
         optionsList.innerHTML = '';
         
         if (q.type === 'mcq') {
-            const labels = ['A', 'B', 'C', 'D'];
-            const optionKeys = ['option_a', 'option_b', 'option_c', 'option_d'];
+            const visualLabels = ['A', 'B', 'C', 'D']; // Always display A, B, C, D visually
             
-            optionKeys.forEach((key, i) => {
-                if (q[key]) {
-                    const optDiv = document.createElement('div');
-                    optDiv.className = 'option-item';
-                    if (responses[index] === labels[i]) {
-                        optDiv.classList.add('selected');
-                    }
-                    
-                    optDiv.innerHTML = `
-                        <div class="option-letter">${labels[i]}</div>
-                        <div class="option-text">${q[key]}</div>
-                    `;
-                    optDiv.onclick = () => selectOption(labels[i]);
-                    optionsList.appendChild(optDiv);
+            q.shuffledOptions.forEach((opt, i) => {
+                const optDiv = document.createElement('div');
+                optDiv.className = 'option-item';
+                
+                // We check against the original label to maintain correct answers for the backend
+                if (responses[index] === opt.originalLabel) {
+                    optDiv.classList.add('selected');
                 }
+                
+                optDiv.innerHTML = `
+                    <div class="option-letter">${visualLabels[i]}</div>
+                    <div class="option-text">${opt.text}</div>
+                `;
+                
+                // When clicked, save the original label (e.g. 'C') even if it's currently displayed as 'A'
+                optDiv.onclick = () => selectOption(opt.originalLabel);
+                optionsList.appendChild(optDiv);
             });
         } else {
             // Integer type
