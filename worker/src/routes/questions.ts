@@ -16,11 +16,12 @@ function generateId(): string {
 // ── GET /questions ────────────────────────────────────────────
 
 export async function listQuestions(request: Request, env: Env): Promise<Response> {
-  const { error } = await requireAuth(request, env, ['admin', 'faculty']);
+  const { ctx, error } = await requireAuth(request, env, ['admin', 'faculty']);
   if (error) return error;
 
   const url = new URL(request.url);
-  const subject    = url.searchParams.get('subject')    ?? '';
+  // Faculty MUST use their assigned subject, overriding any query param
+  const subject    = ctx.user.role === 'faculty' && ctx.user.subject ? ctx.user.subject : (url.searchParams.get('subject') ?? '');
   const chapter    = url.searchParams.get('chapter')    ?? '';
   const difficulty = url.searchParams.get('difficulty') ?? '';
   const type       = url.searchParams.get('type')       ?? '';
@@ -53,6 +54,27 @@ export async function listQuestions(request: Request, env: Env): Promise<Respons
   });
 }
 
+// ── GET /questions/chapters ───────────────────────────────────
+
+export async function listChapters(request: Request, env: Env): Promise<Response> {
+  const { ctx, error } = await requireAuth(request, env, ['admin', 'faculty']);
+  if (error) return error;
+
+  const url = new URL(request.url);
+  const subject = ctx.user.role === 'faculty' && ctx.user.subject ? ctx.user.subject : (url.searchParams.get('subject') ?? '');
+
+  if (!subject) {
+    return json({ chapters: [] });
+  }
+
+  const res = await env.DB.prepare('SELECT DISTINCT chapter FROM questions WHERE subject = ? ORDER BY chapter ASC')
+    .bind(subject).all<{ chapter: string }>();
+
+  return json({
+    chapters: res.results.map(r => r.chapter)
+  });
+}
+
 // ── POST /questions ───────────────────────────────────────────
 
 export async function createQuestion(request: Request, env: Env): Promise<Response> {
@@ -62,8 +84,13 @@ export async function createQuestion(request: Request, env: Env): Promise<Respon
   let body: Record<string, unknown>;
   try { body = await request.json(); } catch { return json400('Invalid JSON'); }
 
-  const { subject, chapter, difficulty, type, question_text, correct_answer,
+  let { subject, chapter, difficulty, type, question_text, correct_answer,
           option_a, option_b, option_c, option_d, explanation, image_r2_key } = body as Record<string, string>;
+
+  // Force faculty to only create questions for their subject
+  if (ctx.user.role === 'faculty' && ctx.user.subject) {
+    subject = ctx.user.subject;
+  }
 
   if (!subject || !chapter || !difficulty || !type || !question_text || !correct_answer) {
     return json400('subject, chapter, difficulty, type, question_text, and correct_answer are required');
@@ -125,28 +152,43 @@ export async function bulkImportQuestions(request: Request, env: Env): Promise<R
 // ── GET /questions/:id ────────────────────────────────────────
 
 export async function getQuestion(request: Request, env: Env, id: string): Promise<Response> {
-  const { error } = await requireAuth(request, env, ['admin', 'faculty']);
+  const { ctx, error } = await requireAuth(request, env, ['admin', 'faculty']);
   if (error) return error;
 
-  const q = await env.DB.prepare('SELECT * FROM questions WHERE id = ?').bind(id).first();
+  const q = await env.DB.prepare('SELECT * FROM questions WHERE id = ?').bind(id).first<{ subject: string }>();
   if (!q) return json404('Question not found');
+
+  if (ctx.user.role === 'faculty' && ctx.user.subject && q.subject !== ctx.user.subject) {
+    return json({ error: 'Forbidden' }, 403);
+  }
+
   return json(q);
 }
 
 // ── PUT /questions/:id ────────────────────────────────────────
 
 export async function updateQuestion(request: Request, env: Env, id: string): Promise<Response> {
-  const { error } = await requireAuth(request, env, ['admin', 'faculty']);
+  const { ctx, error } = await requireAuth(request, env, ['admin', 'faculty']);
   if (error) return error;
 
-  const existing = await env.DB.prepare('SELECT id FROM questions WHERE id = ?').bind(id).first();
+  const existing = await env.DB.prepare('SELECT id, subject FROM questions WHERE id = ?').bind(id).first<{ id: string, subject: string }>();
   if (!existing) return json404('Question not found');
+
+  if (ctx.user.role === 'faculty' && ctx.user.subject && existing.subject !== ctx.user.subject) {
+    return json({ error: 'Forbidden' }, 403);
+  }
 
   let body: Record<string, string>;
   try { body = await request.json(); } catch { return json400('Invalid JSON'); }
 
-  const allowed = ['subject','chapter','difficulty','type','question_text',
+  let allowed = ['subject','chapter','difficulty','type','question_text',
                    'option_a','option_b','option_c','option_d','correct_answer','explanation'];
+  
+  if (ctx.user.role === 'faculty') {
+    // Faculty cannot change the subject of an existing question
+    allowed = allowed.filter(f => f !== 'subject');
+  }
+
   const fields = Object.keys(body).filter(k => allowed.includes(k));
   if (fields.length === 0) return json400('No valid fields to update');
 
@@ -171,6 +213,9 @@ export async function questionsRouter(
   if (pathname === '/questions') {
     if (method === 'GET')  return listQuestions(request, env);
     if (method === 'POST') return createQuestion(request, env);
+  }
+  if (pathname === '/questions/chapters' && method === 'GET') {
+    return listChapters(request, env);
   }
   if (pathname === '/questions/bulk' && method === 'POST') {
     return bulkImportQuestions(request, env);

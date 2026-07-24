@@ -15,25 +15,48 @@ function generateId(): string {
   return crypto.randomUUID();
 }
 
-/** Strip correct_answer and explanation — NEVER sent to students */
+/** Strip correct_answer, explanation, and explanation_image_r2_key — NEVER sent to students */
 function toSafeQuestion(q: Record<string, unknown>): QuestionSafe {
-  const { correct_answer, explanation, ...safe } = q;
-  void correct_answer; void explanation; // explicitly consumed
+  const { correct_answer, explanation, explanation_image_r2_key, created_by, ...safe } = q;
+  void correct_answer; void explanation; void explanation_image_r2_key; void created_by; // explicitly consumed
   return safe as QuestionSafe;
 }
 
 // ── GET /exams ────────────────────────────────────────────────
 
 export async function listExams(request: Request, env: Env): Promise<Response> {
-  const { error } = await requireAuth(request, env);
+  const { ctx, error } = await requireAuth(request, env);
   if (error) return error;
 
   const url = new URL(request.url);
   const status = url.searchParams.get('status') ?? '';
 
-  const rows = status
-    ? await env.DB.prepare('SELECT * FROM exams WHERE status = ? ORDER BY created_at DESC').bind(status).all()
-    : await env.DB.prepare('SELECT * FROM exams ORDER BY created_at DESC').all();
+  let query = 'SELECT * FROM exams';
+  const params: any[] = [];
+  const filters: string[] = [];
+
+  if (status) {
+    filters.push('status = ?');
+    params.push(status);
+  }
+
+  // If student, filter by their batch or global exams
+  if (ctx.user.role === 'student') {
+    const user = await env.DB.prepare('SELECT batch_name FROM users WHERE id = ?').bind(ctx.user.sub).first<{ batch_name: string | null }>();
+    if (user?.batch_name) {
+      filters.push('(target_batch IS NULL OR target_batch = ?)');
+      params.push(user.batch_name);
+    } else {
+      filters.push('target_batch IS NULL');
+    }
+  }
+
+  if (filters.length > 0) {
+    query += ' WHERE ' + filters.join(' AND ');
+  }
+  query += ' ORDER BY created_at DESC';
+
+  const rows = await env.DB.prepare(query).bind(...params).all();
 
   return json(rows.results);
 }
@@ -46,12 +69,12 @@ export async function createExam(request: Request, env: Env): Promise<Response> 
 
   let body: {
     title?: string; description?: string; exam_type?: string;
-    duration_minutes?: number; total_marks?: number;
+    duration_minutes?: number; total_marks?: number; target_batch?: string;
     question_ids?: Array<{ id: string; marks?: number; negative_marks?: number }>;
   };
   try { body = await request.json(); } catch { return json400('Invalid JSON'); }
 
-  const { title, exam_type = 'custom', duration_minutes, total_marks, question_ids = [] } = body;
+  const { title, exam_type = 'custom', duration_minutes, total_marks, target_batch, question_ids = [] } = body;
   if (!title || !duration_minutes || !total_marks) {
     return json400('title, duration_minutes, and total_marks are required');
   }
@@ -60,9 +83,9 @@ export async function createExam(request: Request, env: Env): Promise<Response> 
 
   // Insert exam
   await env.DB.prepare(`
-    INSERT INTO exams (id, title, description, exam_type, duration_minutes, total_marks, created_by)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
-  `).bind(examId, title, body.description ?? null, exam_type, duration_minutes, total_marks, ctx.user.sub).run();
+    INSERT INTO exams (id, title, description, exam_type, duration_minutes, total_marks, target_batch, created_by)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `).bind(examId, title, body.description ?? null, exam_type, duration_minutes, total_marks, target_batch || null, ctx.user.sub).run();
 
   // Link questions
   if (question_ids.length > 0) {
@@ -88,53 +111,67 @@ export async function getExam(request: Request, env: Env, examId: string): Promi
   const cacheKey = `exam:${examId}`;
 
   // ── Cache hit ──────────────────────────────────────────────
+  let payload: Omit<ExamPayload, 'server_time'>;
+  let fromCache = false;
+  
   const cached = await env.CBT_KV.get<ExamPayload>(cacheKey, 'json');
   if (cached) {
-    return json({ ...cached, server_time: Math.floor(Date.now() / 1000), from_cache: true });
+    payload = cached;
+    fromCache = true;
+  } else {
+    // ── Cache miss — query D1 ──────────────────────────────────
+    const exam = await env.DB.prepare('SELECT * FROM exams WHERE id = ?').bind(examId).first<Record<string, unknown>>();
+    if (!exam) return json404('Exam not found');
+
+    // Only published/ongoing exams are visible to students
+    const isStaff = ctx.user.role === 'admin' || ctx.user.role === 'faculty';
+    if (!isStaff && exam['status'] !== 'published' && exam['status'] !== 'ongoing') {
+      return json403('Exam is not available');
+    }
+
+    const qRows = await env.DB.prepare(`
+      SELECT q.*, eq.marks, eq.negative_marks, eq.order_index
+      FROM exam_questions eq
+      JOIN questions q ON q.id = eq.question_id
+      WHERE eq.exam_id = ?
+      ORDER BY eq.order_index
+    `).bind(examId).all<Record<string, unknown>>();
+
+    const config: ExamConfig = exam['config_snapshot']
+      ? JSON.parse(exam['config_snapshot'] as string)
+      : {
+          negative_marking: true,
+          marks_correct: 4,
+          marks_wrong: 1,
+          duration_minutes: exam['duration_minutes'] as number,
+          subjects: [],
+        };
+
+    const safeQuestions: QuestionSafe[] = qRows.results.map(toSafeQuestion);
+
+    payload = {
+      exam: { ...(exam as Record<string, unknown>), config } as ExamPayload['exam'],
+      questions: safeQuestions,
+    };
+
+    // Cache only for published/ongoing exams (not drafts)
+    if (exam['status'] === 'published' || exam['status'] === 'ongoing') {
+      await env.CBT_KV.put(cacheKey, JSON.stringify(payload), { expirationTtl: KV_EXAM_CACHE_TTL });
+    }
   }
 
-  // ── Cache miss — query D1 ──────────────────────────────────
-  const exam = await env.DB.prepare('SELECT * FROM exams WHERE id = ?').bind(examId).first<Record<string, unknown>>();
-  if (!exam) return json404('Exam not found');
-
-  // Only published/ongoing exams are visible to students
-  const isStaff = ctx.user.role === 'admin' || ctx.user.role === 'faculty';
-  if (!isStaff && exam['status'] !== 'published' && exam['status'] !== 'ongoing') {
-    return json403('Exam is not available');
+  // ── Security Override: Strip questions if before start time ──
+  const serverTime = Math.floor(Date.now() / 1000);
+  let isEarlyAccess = false;
+  if (ctx.user.role === 'student' && payload.exam.starts_at && serverTime < payload.exam.starts_at) {
+    payload.questions = [];
+    isEarlyAccess = true;
   }
 
-  const qRows = await env.DB.prepare(`
-    SELECT q.*, eq.marks, eq.negative_marks, eq.order_index
-    FROM exam_questions eq
-    JOIN questions q ON q.id = eq.question_id
-    WHERE eq.exam_id = ?
-    ORDER BY eq.order_index
-  `).bind(examId).all<Record<string, unknown>>();
-
-  const config: ExamConfig = exam['config_snapshot']
-    ? JSON.parse(exam['config_snapshot'] as string)
-    : {
-        negative_marking: true,
-        marks_correct: 4,
-        marks_wrong: 1,
-        duration_minutes: exam['duration_minutes'] as number,
-        subjects: [],
-      };
-
-  const safeQuestions: QuestionSafe[] = qRows.results.map(toSafeQuestion);
-
-  const payload: Omit<ExamPayload, 'server_time'> = {
-    exam: { ...(exam as Record<string, unknown>), config } as ExamPayload['exam'],
-    questions: safeQuestions,
-  };
-
-  // Cache only for published/ongoing exams (not drafts)
-  if (exam['status'] === 'published' || exam['status'] === 'ongoing') {
-    await env.CBT_KV.put(cacheKey, JSON.stringify(payload), { expirationTtl: KV_EXAM_CACHE_TTL });
-  }
-
-  return json({ ...payload, server_time: Math.floor(Date.now() / 1000), from_cache: false });
+  return json({ ...payload, server_time: serverTime, from_cache: fromCache, is_early_access: isEarlyAccess });
 }
+
+// Code replaced above
 
 // ── PUT /exams/:id/publish ────────────────────────────────────
 // Freezes config_snapshot, sets starts_at/ends_at, sets status = 'published'.

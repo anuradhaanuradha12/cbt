@@ -11,6 +11,8 @@ CREATE TABLE IF NOT EXISTS users (
   password_hash TEXT NOT NULL,          -- format: "salt_hex:pbkdf2_hash_hex"
   role         TEXT NOT NULL CHECK(role IN ('admin','faculty','student')),
   name         TEXT NOT NULL,
+  subject      TEXT,                    -- For Faculty SMEs (e.g., physics, chemistry)
+  batch_name   TEXT,                    -- For students to filter exams
   is_active    INTEGER NOT NULL DEFAULT 1,
   created_at   INTEGER NOT NULL DEFAULT (unixepoch())
 );
@@ -30,6 +32,7 @@ CREATE TABLE IF NOT EXISTS questions (
   correct_answer TEXT NOT NULL,
   explanation    TEXT,
   image_r2_key   TEXT,
+  explanation_image_r2_key TEXT,
   created_by     TEXT REFERENCES users(id),
   created_at     INTEGER NOT NULL DEFAULT (unixepoch())
 );
@@ -46,6 +49,7 @@ CREATE TABLE IF NOT EXISTS exams (
   version        INTEGER NOT NULL DEFAULT 1,
   title          TEXT NOT NULL,
   description    TEXT,
+  target_batch   TEXT,                -- Null means global
   exam_type      TEXT NOT NULL DEFAULT 'custom',
   duration_minutes INTEGER NOT NULL,
   total_marks    INTEGER NOT NULL,

@@ -1,0 +1,468 @@
+// admin.js - Admin Panel logic for creating exams & user management
+document.addEventListener('DOMContentLoaded', async () => {
+    // Auth Check
+    const token = api.getToken();
+    const userStr = localStorage.getItem('cbt_user');
+    
+    if (!token || !userStr) {
+        window.location.href = 'index.html';
+        return;
+    }
+    
+    const user = JSON.parse(userStr);
+    if (user.role !== 'admin' && user.role !== 'faculty') {
+        alert("Access Denied: Admins or Faculty only.");
+        window.location.href = 'dashboard.html';
+        return;
+    }
+
+    // Role-based UI updates
+    document.getElementById('userName').textContent = user.name;
+    if (user.role === 'admin') {
+        document.getElementById('navUsers').classList.remove('hidden');
+        document.getElementById('navUsers').classList.add('flex');
+    } else if (user.subject) {
+        const subjectBadge = document.getElementById('userSubject');
+        subjectBadge.textContent = `(${user.subject})`;
+        subjectBadge.classList.remove('hidden');
+    }
+
+    // Tab Switching Logic
+    const navLinks = document.querySelectorAll('.nav-link');
+    const tabPanes = document.querySelectorAll('.tab-pane');
+
+    navLinks.forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            
+            // Handle Link Styles
+            navLinks.forEach(l => {
+                l.classList.remove('bg-indigo-500/10', 'text-indigo-400');
+                l.classList.add('text-slate-400', 'hover:text-slate-200', 'hover:bg-slate-800/50');
+            });
+            const clickedLink = e.currentTarget;
+            clickedLink.classList.remove('text-slate-400', 'hover:text-slate-200', 'hover:bg-slate-800/50');
+            clickedLink.classList.add('bg-indigo-500/10', 'text-indigo-400');
+            
+            // Handle Panes
+            tabPanes.forEach(p => p.classList.remove('active'));
+            const tabId = clickedLink.getAttribute('data-tab');
+            document.getElementById(`tab-${tabId}`).classList.add('active');
+        });
+    });
+
+    // State Variables
+    let currentPage = 1;
+    const limit = 20;
+    let selectedQuestions = []; // Array of question objects
+
+    // DOM Elements
+    const questionsContainer = document.getElementById('questionsContainer');
+    const loadingIndicator = document.getElementById('loadingIndicator');
+    const pageInfo = document.getElementById('pageInfo');
+    const draftList = document.getElementById('draftList');
+    const draftCount = document.getElementById('draftCount');
+    
+    // Filters
+    const filterSubject = document.getElementById('filterSubject');
+    const filterChapter = document.getElementById('filterChapter');
+    const filterDifficulty = document.getElementById('filterDifficulty');
+    const btnSearch = document.getElementById('btnSearch');
+    
+    // Pagination
+    const btnPrevPage = document.getElementById('btnPrevPage');
+    const btnNextPage = document.getElementById('btnNextPage');
+
+    // Create Exam
+    const btnCreateExam = document.getElementById('btnCreateExam');
+
+    // CSV Upload
+    const csvFileInput = document.getElementById('csvFileInput');
+    const csvFileName = document.getElementById('csvFileName');
+    const btnUploadCsv = document.getElementById('btnUploadCsv');
+    const csvUploadStatus = document.getElementById('csvUploadStatus');
+
+    // ==========================================
+    // CSV File Selection
+    // ==========================================
+    csvFileInput.addEventListener('change', (e) => {
+        if (e.target.files.length > 0) {
+            csvFileName.textContent = e.target.files[0].name;
+            csvFileName.classList.add('text-emerald-400');
+        } else {
+            csvFileName.textContent = 'or drag and drop';
+            csvFileName.classList.remove('text-emerald-400');
+        }
+    });
+
+    // ==========================================
+    // Fetch and Render Questions
+    // ==========================================
+
+    async function loadQuestions() {
+        loadingIndicator.classList.remove('hidden');
+        loadingIndicator.classList.add('flex');
+        questionsContainer.innerHTML = '';
+        
+        const subject = filterSubject.value;
+        const chapter = filterChapter.value;
+        const difficulty = filterDifficulty.value;
+        
+        let query = `/questions?page=${currentPage}&limit=${limit}`;
+        if (subject) query += `&subject=${subject}`;
+        if (chapter) query += `&chapter=${encodeURIComponent(chapter)}`;
+        if (difficulty) query += `&difficulty=${difficulty}`;
+
+        try {
+            const response = await api.request(query);
+            loadingIndicator.classList.add('hidden');
+            loadingIndicator.classList.remove('flex');
+            
+            if (response.data.length === 0) {
+                questionsContainer.innerHTML = '<p class="text-slate-500 text-sm text-center py-8 italic bg-slate-900/30 rounded-lg border border-dashed border-slate-800">No questions found.</p>';
+                return;
+            }
+            
+            pageInfo.textContent = `Page ${currentPage} of ${Math.ceil(response.total / limit) || 1}`;
+            btnPrevPage.disabled = currentPage === 1;
+            btnNextPage.disabled = currentPage >= Math.ceil(response.total / limit);
+            
+            response.data.forEach(q => {
+                const isSelected = selectedQuestions.some(sq => sq.id === q.id);
+                
+                const card = document.createElement('div');
+                card.className = `p-4 rounded-xl border transition-colors relative ${isSelected ? 'bg-indigo-500/10 border-indigo-500/50 shadow-[0_0_15px_rgba(99,102,241,0.1)]' : 'bg-slate-900 border-slate-800 hover:border-slate-700'}`;
+                
+                // Format options
+                let optionsHtml = '';
+                if (q.option_a && q.option_b) {
+                    optionsHtml = `
+                        <div class="grid grid-cols-2 gap-2 mt-3 text-sm text-slate-400">
+                            <div class="bg-slate-800/50 p-2 rounded border border-slate-700"><strong class="text-slate-300">A)</strong> ${q.option_a}</div>
+                            <div class="bg-slate-800/50 p-2 rounded border border-slate-700"><strong class="text-slate-300">B)</strong> ${q.option_b}</div>
+                            ${q.option_c ? `<div class="bg-slate-800/50 p-2 rounded border border-slate-700"><strong class="text-slate-300">C)</strong> ${q.option_c}</div>` : ''}
+                            ${q.option_d ? `<div class="bg-slate-800/50 p-2 rounded border border-slate-700"><strong class="text-slate-300">D)</strong> ${q.option_d}</div>` : ''}
+                        </div>
+                    `;
+                }
+
+                // Solution block (hidden by default)
+                let solutionHtml = '';
+                if (q.correct_answer || q.explanation) {
+                    solutionHtml = `
+                        <div class="solution-block hidden mt-4 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-sm">
+                            <div class="font-bold text-emerald-400 mb-1">Correct Answer: ${q.correct_answer.toUpperCase()}</div>
+                            ${q.explanation ? `<div class="text-emerald-100/80 mt-2">${q.explanation}</div>` : ''}
+                            ${q.explanation_image_r2_key ? `<img src="/images/${q.explanation_image_r2_key}" class="mt-3 max-h-48 rounded border border-emerald-500/30" alt="Solution Image">` : ''}
+                        </div>
+                    `;
+                }
+                
+                card.innerHTML = `
+                    <div class="flex gap-2 flex-wrap mb-3 pr-24">
+                        <span class="text-xs font-semibold px-2 py-1 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">${q.subject}</span>
+                        <span class="text-xs font-semibold px-2 py-1 rounded bg-slate-800 text-slate-300 border border-slate-700">${q.difficulty}</span>
+                        <span class="text-xs font-semibold px-2 py-1 rounded bg-slate-800 text-slate-300 border border-slate-700">${q.type}</span>
+                    </div>
+                    
+                    <button class="add-btn absolute top-4 right-4 text-xs font-semibold px-4 py-2 rounded-lg transition-all border shadow-md ${isSelected ? 'bg-indigo-600/20 text-indigo-400 border-indigo-500/30 hover:bg-indigo-600/30' : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700 hover:text-white'}">
+                        ${isSelected ? '✓ Added' : '+ Add'}
+                    </button>
+
+                    <div class="text-sm text-slate-200 mt-2 font-medium leading-relaxed">${q.question_text}</div>
+                    ${q.image_r2_key ? `<img src="/images/${q.image_r2_key}" class="mt-3 max-h-48 rounded border border-slate-700" alt="Question Image">` : ''}
+                    
+                    ${optionsHtml}
+                    
+                    ${solutionHtml ? `
+                        <div class="mt-3 flex justify-between items-center border-t border-slate-800 pt-3">
+                            <button class="toggle-solution text-xs font-medium text-emerald-400 hover:text-emerald-300 transition-colors flex items-center gap-1">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                                <span>Show Solution</span>
+                            </button>
+                        </div>
+                        ${solutionHtml}
+                    ` : ''}
+                `;
+                
+                const addBtn = card.querySelector('.add-btn');
+                addBtn.onclick = () => toggleQuestion(q, card, addBtn);
+                
+                const toggleBtn = card.querySelector('.toggle-solution');
+                if (toggleBtn) {
+                    toggleBtn.onclick = () => {
+                        const block = card.querySelector('.solution-block');
+                        const span = toggleBtn.querySelector('span');
+                        if (block.classList.contains('hidden')) {
+                            block.classList.remove('hidden');
+                            span.textContent = 'Hide Solution';
+                        } else {
+                            block.classList.add('hidden');
+                            span.textContent = 'Show Solution';
+                        }
+                    };
+                }
+                
+                questionsContainer.appendChild(card);
+            });
+            
+            if (window.renderMathInElement) {
+                renderMathInElement(document.body, {
+                    delimiters: [
+                        {left: '$$', right: '$$', display: true},
+                        {left: '$', right: '$', display: false},
+                        {left: '\\(', right: '\\)', display: false},
+                        {left: '\\[', right: '\\]', display: true}
+                    ],
+                    throwOnError: false
+                });
+            }
+            
+        } catch (error) {
+            loadingIndicator.classList.add('hidden');
+            loadingIndicator.classList.remove('flex');
+            questionsContainer.innerHTML = `<p class="text-red-400 text-center text-sm bg-red-500/10 p-4 rounded-lg border border-red-500/20">Error: ${error.message}</p>`;
+        }
+    }
+
+    // ==========================================
+    // Draft Management
+    // ==========================================
+
+    function toggleQuestion(question, cardElement, btnElement) {
+        const existingIndex = selectedQuestions.findIndex(sq => sq.id === question.id);
+        
+        if (existingIndex >= 0) {
+            selectedQuestions.splice(existingIndex, 1);
+            cardElement.className = 'p-4 rounded-xl border transition-colors relative bg-slate-900 border-slate-800 hover:border-slate-700';
+            btnElement.className = 'add-btn absolute top-4 right-4 text-xs font-semibold px-4 py-2 rounded-lg transition-all border shadow-md bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700 hover:text-white';
+            btnElement.textContent = '+ Add';
+        } else {
+            selectedQuestions.push(question);
+            cardElement.className = 'p-4 rounded-xl border transition-colors relative bg-indigo-500/10 border-indigo-500/50 shadow-[0_0_15px_rgba(99,102,241,0.1)]';
+            btnElement.className = 'add-btn absolute top-4 right-4 text-xs font-semibold px-4 py-2 rounded-lg transition-all border shadow-md bg-indigo-600/20 text-indigo-400 border-indigo-500/30 hover:bg-indigo-600/30';
+            btnElement.textContent = '✓ Added';
+        }
+        
+        renderDraftList();
+    }
+
+    function renderDraftList() {
+        draftCount.textContent = `${selectedQuestions.length} Qs`;
+        
+        if (selectedQuestions.length === 0) {
+            draftList.innerHTML = '<p class="text-slate-500 text-sm text-center py-8 italic bg-slate-900/30 rounded-lg border border-dashed border-slate-800">No questions added yet.</p>';
+            return;
+        }
+        
+        draftList.innerHTML = '';
+        selectedQuestions.forEach((q, index) => {
+            const item = document.createElement('div');
+            item.className = 'flex justify-between items-center p-3 border-b border-slate-800 text-sm';
+            
+            let preview = q.question_text.substring(0, 40).replace(/<[^>]+>/g, '');
+            if (preview.length === 40) preview += '...';
+            
+            item.innerHTML = `
+                <span class="text-slate-300"><strong class="text-slate-100">Q${index + 1}.</strong> ${preview}</span>
+                <button class="text-red-400 hover:text-red-300 transition-colors p-1" title="Remove">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            `;
+            
+            item.querySelector('button').onclick = () => {
+                selectedQuestions.splice(index, 1);
+                renderDraftList();
+                loadQuestions();
+            };
+            
+            draftList.appendChild(item);
+        });
+    }
+
+    // ==========================================
+    // Exam Creation
+    // ==========================================
+
+    btnCreateExam.addEventListener('click', async () => {
+        const title = document.getElementById('examTitle').value.trim();
+        const description = document.getElementById('examDescription').value.trim();
+        const duration = parseInt(document.getElementById('examDuration').value);
+        const status = document.getElementById('examStatus').value;
+        
+        if (!title) {
+            alert('Please enter an exam title.');
+            return;
+        }
+        if (selectedQuestions.length === 0) {
+            alert('Please add at least one question to the exam.');
+            return;
+        }
+        
+        btnCreateExam.disabled = true;
+        btnCreateExam.innerHTML = `<div class="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div> Creating...`;
+        
+        try {
+            const targetBatchVal = document.getElementById('targetBatch').value.trim();
+            const payload = {
+                title,
+                description,
+                exam_type: 'custom',
+                duration_minutes: duration,
+                total_marks: selectedQuestions.length * 4,
+                target_batch: targetBatchVal ? targetBatchVal : undefined,
+                question_ids: selectedQuestions.map(q => ({ id: q.id, marks: 4, negative_marks: 1 }))
+            };
+            
+            const createRes = await api.request('/exams', 'POST', payload);
+            
+            if (status === 'published') {
+                const startsAtInput = document.getElementById('examStartsAt').value;
+                const startsAt = startsAtInput ? Math.floor(new Date(startsAtInput).getTime() / 1000) : Math.floor(Date.now() / 1000);
+                await api.request(`/exams/${createRes.id}/publish`, 'PUT', {
+                    starts_at: startsAt
+                });
+            }
+            
+            alert(`Exam successfully created${status === 'published' ? ' and published' : ''}!`);
+            
+            selectedQuestions = [];
+            document.getElementById('examTitle').value = '';
+            document.getElementById('examDescription').value = '';
+            document.getElementById('examStartsAt').value = '';
+            renderDraftList();
+            loadQuestions();
+            
+        } catch (error) {
+            alert('Failed to create exam: ' + error.message);
+        } finally {
+            btnCreateExam.disabled = false;
+            btnCreateExam.innerHTML = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg> Create Exam`;
+        }
+    });
+
+    // ==========================================
+    // Bulk CSV Upload
+    // ==========================================
+    // CSV Download Template
+    const btnDownloadTemplate = document.getElementById('btnDownloadTemplate');
+    if (btnDownloadTemplate) {
+        btnDownloadTemplate.addEventListener('click', () => {
+            const csvContent = "name,email,password\nJohn Doe,john.doe@example.com,TempPass123!\nJane Smith,jane.smith@example.com,TempPass456!";
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", "student_template.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        });
+    }
+
+    btnUploadCsv.addEventListener('click', async () => {
+        const file = csvFileInput.files[0];
+        if (!file) {
+            csvUploadStatus.className = 'mt-6 p-4 rounded-lg text-sm bg-red-500/10 text-red-400 border border-red-500/20';
+            csvUploadStatus.textContent = 'Please select a CSV file first.';
+            csvUploadStatus.classList.remove('hidden');
+            return;
+        }
+
+        btnUploadCsv.disabled = true;
+        btnUploadCsv.textContent = 'Processing...';
+        csvUploadStatus.classList.add('hidden');
+
+        try {
+            const text = await file.text();
+            
+            // Basic CSV parsing
+            const lines = text.split('\n').filter(l => l.trim() !== '');
+            if (lines.length < 2) throw new Error('CSV must contain a header row and at least one user.');
+
+            const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+            
+            const nameIdx = headers.indexOf('name');
+            const emailIdx = headers.indexOf('email');
+            const passIdx = headers.indexOf('password');
+            const batchIdx = headers.indexOf('batch');
+
+            if (nameIdx === -1 || emailIdx === -1 || passIdx === -1) {
+                throw new Error('CSV must contain name, email, and password columns.');
+            }
+
+            const users = [];
+            for (let i = 1; i < lines.length; i++) {
+                const cols = lines[i].split(',').map(c => c.trim());
+                if (cols.length >= 3) {
+                    users.push({
+                        name: cols[nameIdx],
+                        email: cols[emailIdx],
+                        password: cols[passIdx],
+                        batch_name: batchIdx !== -1 ? cols[batchIdx] : null
+                    });
+                }
+            }
+
+            // POST to bulk endpoint
+            const res = await api.request('/users/bulk', 'POST', { users });
+            
+            csvUploadStatus.className = 'mt-6 p-4 rounded-lg text-sm bg-emerald-500/10 text-emerald-400 border border-emerald-500/20';
+            csvUploadStatus.innerHTML = `<strong>Success!</strong> Created ${res.inserted} users. <br> Skipped ${res.skipped} existing users.`;
+            csvUploadStatus.classList.remove('hidden');
+            
+            // Reset input
+            csvFileInput.value = '';
+            csvFileName.textContent = 'or drag and drop';
+            csvFileName.classList.remove('text-emerald-400');
+
+        } catch (error) {
+            csvUploadStatus.className = 'mt-6 p-4 rounded-lg text-sm bg-red-500/10 text-red-400 border border-red-500/20';
+            csvUploadStatus.textContent = `Error: ${error.message}`;
+            csvUploadStatus.classList.remove('hidden');
+        } finally {
+            btnUploadCsv.disabled = false;
+            btnUploadCsv.textContent = 'Upload Students';
+        }
+    });
+
+    // ==========================================
+    // Event Listeners
+    // ==========================================
+
+    filterSubject.addEventListener('change', async () => {
+        const subject = filterSubject.value;
+        filterChapter.innerHTML = '<option value="">All Chapters</option>';
+        if (!subject) return;
+
+        try {
+            const res = await api.request(`/questions/chapters?subject=${subject}`);
+            res.chapters.forEach(chap => {
+                const opt = document.createElement('option');
+                opt.value = chap;
+                opt.textContent = chap;
+                filterChapter.appendChild(opt);
+            });
+        } catch (e) {
+            console.error('Failed to load chapters:', e);
+        }
+    });
+
+    btnSearch.addEventListener('click', () => {
+        currentPage = 1;
+        loadQuestions();
+    });
+    btnPrevPage.addEventListener('click', () => {
+        if (currentPage > 1) {
+            currentPage--;
+            loadQuestions();
+        }
+    });
+    btnNextPage.addEventListener('click', () => {
+        currentPage++;
+        loadQuestions();
+    });
+
+    // Init
+    loadQuestions();
+});

@@ -7,6 +7,7 @@ export interface JWTPayload {
   email: string;
   role: Role;
   name: string;
+  subject?: Subject;  // for faculty only
   sid: string;        // session id (stored in KV for single-session enforcement)
   iat: number;
   exp: number;
@@ -24,6 +25,7 @@ export interface PublicUser {
   email: string;
   role: Role;
   name: string;
+  subject?: Subject;
 }
 
 // ─── Questions ──────────────────────────────────────────────────────────────
@@ -46,12 +48,13 @@ export interface Question {
   correct_answer?: string; // NEVER sent to student
   explanation?: string;    // NEVER sent to student during exam
   image_r2_key?: string;
+  explanation_image_r2_key?: string; // NEVER sent to student during exam
   created_by?: string;
   created_at?: number;
 }
 
-/** Safe version sent to students (no answers/explanations) */
-export type QuestionSafe = Omit<Question, 'correct_answer' | 'explanation'>;
+/** Safe version sent to students (no answers/explanations/authors) */
+export type QuestionSafe = Omit<Question, 'correct_answer' | 'explanation' | 'explanation_image_r2_key' | 'created_by'>;
 
 // ─── Exams ──────────────────────────────────────────────────────────────────
 

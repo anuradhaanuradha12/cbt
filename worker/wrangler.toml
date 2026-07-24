@@ -31,3 +31,8 @@ PLATFORM_NAME = "CBT Platform"
 [dev]
 port = 8787
 local_protocol = "http"
+
+# ── Triggers ──────────────────────────────────────────────────
+[triggers]
+crons = ["0 0 * * 0"] # Run every Sunday at midnight
+

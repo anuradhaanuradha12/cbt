@@ -36,6 +36,9 @@ export async function startAttempt(request: Request, env: Env): Promise<Response
   }
 
   const now = Math.floor(Date.now() / 1000);
+  if (exam.starts_at && now < exam.starts_at) {
+    return json403('Exam has not started yet');
+  }
   if (exam.ends_at && now > exam.ends_at) {
     return json403('Exam has ended');
   }
@@ -105,7 +108,7 @@ export async function logEvent(request: Request, env: Env): Promise<Response> {
   const { attempt_id, event_type, occurred_at, metadata } = body;
   if (!attempt_id || !event_type) return json400('attempt_id and event_type are required');
 
-  const validEvents = ['tab_hidden','window_blur','fullscreen_exit','copy','paste','focus_lost'];
+  const validEvents = ['tab_hidden','window_blur','fullscreen_exit','copy','paste','focus_lost','strike_issued'];
   if (!validEvents.includes(event_type)) return json400(`Invalid event_type. Must be one of: ${validEvents.join(', ')}`);
 
   // Verify the attempt belongs to this student
