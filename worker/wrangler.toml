@@ -36,3 +36,8 @@ local_protocol = "http"
 [triggers]
 crons = ["0 0 * * SUN"] # Run every Sunday at midnight
 
+# ── Static Assets ─────────────────────────────────────────────
+[assets]
+directory = "../frontend"
+binding = "ASSETS"
+
