@@ -1,5 +1,5 @@
 // api.js - Central API configuration and utilities
-const API_URL = 'http://127.0.0.1:8787';
+const API_URL = 'https://cbt-worker.shishira-932.workers.dev';
 
 const api = {
     // Get token from local storage
