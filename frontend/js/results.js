@@ -68,7 +68,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             ${statusText} (${ans.marks_awarded > 0 ? '+' : ''}${ans.marks_awarded} marks)
                         </span>
                     </div>
-                    <div>${ans.question_text}</div>
+                    <div class="whitespace-pre-wrap">${ans.question_text}</div>
                     ${ans.image_r2_key ? `<img src="/images/${ans.image_r2_key}" class="mt-3 max-h-64 rounded border border-slate-700" alt="Question Image">` : ''}
                     <div style="margin-top: 1rem;">
                         ${optionsHtml}
@@ -78,7 +78,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         <strong>Correct Answer:</strong> ${ans.correct_answer}
                     </div>
                     ${ans.explanation ? `
-                        <div class="explanation">
+                        <div class="explanation whitespace-pre-wrap">
                             <strong>Explanation:</strong><br>
                             ${ans.explanation}
                             ${ans.explanation_image_r2_key ? `<br><img src="/images/${ans.explanation_image_r2_key}" class="mt-3 max-h-48 rounded border border-slate-700" alt="Solution Image">` : ''}

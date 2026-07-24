@@ -46,8 +46,25 @@ export async function listQuestions(request: Request, env: Env): Promise<Respons
       .bind(...bindings).first<{ total: number }>(),
   ]);
 
+function fixLatex(str: string | null): string | null {
+  if (!str) return str;
+  return str
+    .replace(/\r(ight|ho|ightarrow|angle|m|ef|eq|rangle)/g, '\\r$1')
+    .replace(/\n(eq|u|abla|ewline|rightarrow|ormalsize|otin|i)/g, '\\n$1');
+}
+
+function sanitizeQuestion(q: any) {
+  if (q.question_text) q.question_text = fixLatex(q.question_text);
+  if (q.explanation) q.explanation = fixLatex(q.explanation);
+  if (q.option_a) q.option_a = fixLatex(q.option_a);
+  if (q.option_b) q.option_b = fixLatex(q.option_b);
+  if (q.option_c) q.option_c = fixLatex(q.option_c);
+  if (q.option_d) q.option_d = fixLatex(q.option_d);
+  return q;
+}
+
   return json({
-    data: rows.results,
+    data: rows.results.map(sanitizeQuestion),
     total: countRow?.total ?? 0,
     page,
     limit,

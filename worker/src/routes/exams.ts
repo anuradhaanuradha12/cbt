@@ -15,10 +15,24 @@ function generateId(): string {
   return crypto.randomUUID();
 }
 
+function fixLatex(str: string | null | unknown): string | null {
+  if (typeof str !== 'string' || !str) return str as string | null;
+  return str
+    .replace(/\r(ight|ho|ightarrow|angle|m|ef|eq|rangle)/g, '\\r$1')
+    .replace(/\n(eq|u|abla|ewline|rightarrow|ormalsize|otin|i)/g, '\\n$1');
+}
+
 /** Strip correct_answer, explanation, and explanation_image_r2_key — NEVER sent to students */
 function toSafeQuestion(q: Record<string, unknown>): QuestionSafe {
   const { correct_answer, explanation, explanation_image_r2_key, created_by, ...safe } = q;
   void correct_answer; void explanation; void explanation_image_r2_key; void created_by; // explicitly consumed
+  
+  if (safe.question_text) safe.question_text = fixLatex(safe.question_text);
+  if (safe.option_a) safe.option_a = fixLatex(safe.option_a);
+  if (safe.option_b) safe.option_b = fixLatex(safe.option_b);
+  if (safe.option_c) safe.option_c = fixLatex(safe.option_c);
+  if (safe.option_d) safe.option_d = fixLatex(safe.option_d);
+
   return safe as QuestionSafe;
 }
 

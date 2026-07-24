@@ -162,7 +162,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     solutionHtml = `
                         <div class="solution-block hidden mt-4 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-sm">
                             <div class="font-bold text-emerald-400 mb-1">Correct Answer: ${q.correct_answer.toUpperCase()}</div>
-                            ${q.explanation ? `<div class="text-emerald-100/80 mt-2">${q.explanation}</div>` : ''}
+                            ${q.explanation ? `<div class="text-emerald-100/80 mt-2 whitespace-pre-wrap">${q.explanation}</div>` : ''}
                             ${q.explanation_image_r2_key ? `<img src="/images/${q.explanation_image_r2_key}" class="mt-3 max-h-48 rounded border border-emerald-500/30" alt="Solution Image">` : ''}
                         </div>
                     `;

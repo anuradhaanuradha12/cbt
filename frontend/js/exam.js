@@ -249,6 +249,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const q = questions[index];
         
         questionNumber.textContent = `Question ${index + 1}`;
+        questionText.className = 'whitespace-pre-wrap text-slate-200 mt-2 font-medium leading-relaxed';
         questionText.innerHTML = q.question_text || 'No question text available.';
         
         if (q.image_r2_key) {
