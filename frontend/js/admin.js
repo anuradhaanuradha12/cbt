@@ -25,6 +25,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         const subjectBadge = document.getElementById('userSubject');
         subjectBadge.textContent = `(${user.subject})`;
         subjectBadge.classList.remove('hidden');
+        
+        // Lock the subject filter to the faculty's subject
+        const filterSubject = document.getElementById('filterSubject');
+        if (filterSubject) {
+            filterSubject.value = user.subject;
+            filterSubject.disabled = true;
+            
+            // Trigger change event to load chapters for this subject
+            filterSubject.dispatchEvent(new Event('change'));
+        }
     }
 
     // Tab Switching Logic
