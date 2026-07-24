@@ -1,0 +1,33 @@
+name = "cbt-worker"
+main = "src/index.ts"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
+
+# ── D1 Database ────────────────────────────────────────────────
+[[d1_databases]]
+binding = "DB"
+database_name = "cbt-platform"
+database_id = "220c5793-3f10-460a-b5fc-8f3223feee43"
+
+# ── KV Namespace ───────────────────────────────────────────────
+[[kv_namespaces]]
+binding = "CBT_KV"
+id = "9ceb8c5eef2541fcbc7485301a4b23b0"
+
+# ── R2 Bucket ─────────────────────────────────────────────────
+[[r2_buckets]]
+binding = "CBT_R2"
+bucket_name = "cbt-media"
+
+# ── Vars (non-secret) ─────────────────────────────────────────
+[vars]
+PLATFORM_NAME = "CBT Platform"
+
+# ── Secrets (set via `wrangler secret put JWT_SECRET`) ────────
+# JWT_SECRET is NOT stored here — set it with:
+#   wrangler secret put JWT_SECRET
+
+# ── Dev overrides ─────────────────────────────────────────────
+[dev]
+port = 8787
+local_protocol = "http"

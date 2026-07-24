@@ -1,0 +1,22 @@
+{
+  "name": "cbt-worker",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "db:migrate": "wrangler d1 execute cbt-platform --file=src/db/schema.sql",
+    "db:migrate:local": "wrangler d1 execute cbt-platform --local --file=src/db/schema.sql",
+    "db:seed": "wrangler d1 execute cbt-platform --local --file=src/db/seed.sql",
+    "types": "wrangler types"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20240924.0",
+    "typescript": "^5.5.2",
+    "wrangler": "^3.78.0"
+  },
+  "allowScripts": {
+    "esbuild@0.17.19": true,
+    "workerd@1.20250718.0": true
+  }
+}

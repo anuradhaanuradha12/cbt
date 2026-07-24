@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+dist/
+.wrangler/
+
+# Wrangler local state
+.dev.vars
+
+# Environment secrets — NEVER commit these
+.env
+.env.local
+.env.*.local
+
+# Build outputs
+*.js.map
+*.d.ts
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/settings.json
+.idea/
+
+# Logs
+*.log
+npm-debug.log*
