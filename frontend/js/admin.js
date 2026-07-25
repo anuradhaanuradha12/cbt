@@ -26,6 +26,22 @@ document.addEventListener('DOMContentLoaded', async () => {
         subjectBadge.textContent = `(${user.subject})`;
         subjectBadge.classList.remove('hidden');
         
+        // Show Pending Tasks tab for faculty
+        const navTasks = document.getElementById('navTasks');
+        navTasks.classList.remove('hidden');
+        navTasks.classList.add('flex');
+        
+        // Hide Exam Draft panel and make Question Bank full width
+        const questionsGrid = document.querySelector('#tab-questions .grid');
+        if (questionsGrid) {
+            questionsGrid.classList.remove('lg:grid-cols-[1fr_400px]');
+            questionsGrid.classList.add('grid-cols-1');
+            questionsGrid.children[1].style.display = 'none'; // hide right pane
+        }
+        
+        // Switch to Pending Tasks tab by default
+        setTimeout(() => navTasks.click(), 10);
+        
         // Lock the subject filter to the faculty's subject
         const filterSubject = document.getElementById('filterSubject');
         if (filterSubject) {
