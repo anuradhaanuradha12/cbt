@@ -84,11 +84,12 @@ export async function createExam(request: Request, env: Env): Promise<Response> 
   let body: {
     title?: string; description?: string; exam_type?: string;
     duration_minutes?: number; total_marks?: number; target_batch?: string;
+    subject_quotas?: any;
     question_ids?: Array<{ id: string; marks?: number; negative_marks?: number }>;
   };
   try { body = await request.json(); } catch { return json400('Invalid JSON'); }
 
-  const { title, exam_type = 'custom', duration_minutes, total_marks, target_batch, question_ids = [] } = body;
+  const { title, exam_type = 'custom', duration_minutes, total_marks, target_batch, subject_quotas, question_ids = [] } = body;
   if (!title || !duration_minutes || !total_marks) {
     return json400('title, duration_minutes, and total_marks are required');
   }
@@ -97,17 +98,17 @@ export async function createExam(request: Request, env: Env): Promise<Response> 
 
   // Insert exam
   await env.DB.prepare(`
-    INSERT INTO exams (id, title, description, exam_type, duration_minutes, total_marks, target_batch, created_by)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-  `).bind(examId, title, body.description ?? null, exam_type, duration_minutes, total_marks, target_batch || null, ctx.user.sub).run();
+    INSERT INTO exams (id, title, description, exam_type, duration_minutes, total_marks, target_batch, subject_quotas, created_by)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).bind(examId, title, body.description ?? null, exam_type, duration_minutes, total_marks, target_batch || null, subject_quotas ? JSON.stringify(subject_quotas) : null, ctx.user.sub).run();
 
   // Link questions
-  if (question_ids.length > 0) {
+  if (Array.isArray(question_ids) && question_ids.length > 0) {
     const stmt = env.DB.prepare(
       'INSERT INTO exam_questions (exam_id, question_id, order_index, marks, negative_marks) VALUES (?, ?, ?, ?, ?)'
     );
     await env.DB.batch(
-      question_ids.map((q, i) => stmt.bind(examId, q.id, i + 1, q.marks ?? 4, q.negative_marks ?? 1.0))
+      question_ids.map((q, i) => stmt.bind(examId, q?.id, i + 1, q?.marks ?? 4, q?.negative_marks ?? 1.0))
     );
   }
 
@@ -276,6 +277,97 @@ export async function versionExam(request: Request, env: Env, examId: string): P
   return json({ id: newId, version: newVersion, message: `Version ${newVersion} created as draft` }, 201);
 }
 
+// ── POST /exams/:id/auto-select-preview ──────────────────────
+export async function autoSelectPreview(request: Request, env: Env, _examId: string): Promise<Response> {
+  const { error } = await requireAuth(request, env, ['admin', 'faculty']);
+  if (error) return error;
+
+  let body: { subject: string; chapters: string[]; count: number };
+  try { body = await request.json(); } catch { return json400('Invalid JSON'); }
+  const { subject, chapters, count } = body;
+  if (!subject || !Array.isArray(chapters) || chapters.length === 0 || !count) return json400('Missing required fields');
+
+  const placeholders = chapters.map(() => '?').join(',');
+  const query = `
+    SELECT q.*, 
+           CASE WHEN eq.exam_id IS NOT NULL THEN 1 ELSE 0 END as previously_used
+    FROM questions q
+    LEFT JOIN exam_questions eq ON q.id = eq.question_id
+    WHERE q.subject = ? AND q.chapter IN (${placeholders})
+    GROUP BY q.id
+    ORDER BY previously_used ASC, RANDOM()
+    LIMIT ?
+  `;
+  const params = [subject, ...chapters, count];
+  const rows = await env.DB.prepare(query).bind(...params).all();
+
+  return json(rows.results);
+}
+
+// ── POST /exams/:id/auto-replace ──────────────────────────────
+export async function autoReplace(request: Request, env: Env, _examId: string): Promise<Response> {
+  const { error } = await requireAuth(request, env, ['admin', 'faculty']);
+  if (error) return error;
+
+  let body: { subject: string; chapters: string[]; exclude_ids: string[] };
+  try { body = await request.json(); } catch { return json400('Invalid JSON'); }
+  const { subject, chapters, exclude_ids } = body;
+  if (!subject || !Array.isArray(chapters) || chapters.length === 0 || !Array.isArray(exclude_ids)) return json400('Missing required fields');
+
+  const chaptersPlc = chapters.map(() => '?').join(',');
+  let query = `
+    SELECT q.*, 
+           CASE WHEN eq.exam_id IS NOT NULL THEN 1 ELSE 0 END as previously_used
+    FROM questions q
+    LEFT JOIN exam_questions eq ON q.id = eq.question_id
+    WHERE q.subject = ? AND q.chapter IN (${chaptersPlc})
+  `;
+  const params = [subject, ...chapters];
+
+  if (exclude_ids.length > 0) {
+    const excludePlc = exclude_ids.map(() => '?').join(',');
+    query += ` AND q.id NOT IN (${excludePlc})`;
+    params.push(...exclude_ids);
+  }
+
+  query += `
+    GROUP BY q.id
+    ORDER BY previously_used ASC, RANDOM()
+    LIMIT 1
+  `;
+
+  const rows = await env.DB.prepare(query).bind(...params).all();
+  if (rows.results.length === 0) return json404('No replacements found');
+  return json(rows.results[0]);
+}
+
+// ── PUT /exams/:id/questions ──────────────────────────────────
+export async function addQuestionsToExam(request: Request, env: Env, examId: string): Promise<Response> {
+  const { error } = await requireAuth(request, env, ['admin', 'faculty']);
+  if (error) return error;
+
+  let body: { question_ids: Array<{ id: string; marks?: number; negative_marks?: number }> };
+  try { body = await request.json(); } catch { return json400('Invalid JSON'); }
+  
+  const { question_ids } = body;
+  if (!Array.isArray(question_ids) || question_ids.length === 0) return json400('No questions provided');
+
+  const maxOrderRes = await env.DB.prepare('SELECT MAX(order_index) as max_idx FROM exam_questions WHERE exam_id = ?').bind(examId).first<{ max_idx: number }>();
+  let currentOrder = maxOrderRes?.max_idx ?? 0;
+
+  const stmt = env.DB.prepare(
+    'INSERT INTO exam_questions (exam_id, question_id, order_index, marks, negative_marks) VALUES (?, ?, ?, ?, ?)'
+  );
+  await env.DB.batch(
+    question_ids.map(q => {
+      currentOrder++;
+      return stmt.bind(examId, q?.id, currentOrder, q?.marks ?? 4, q?.negative_marks ?? 1.0);
+    })
+  );
+
+  return json({ message: 'Questions added successfully' });
+}
+
 // ── Route Dispatcher ─────────────────────────────────────────
 
 export async function examsRouter(
@@ -295,6 +387,15 @@ export async function examsRouter(
 
   const versionMatch = pathname.match(/^\/exams\/([^/]+)\/version$/);
   if (versionMatch && method === 'POST') return versionExam(request, env, versionMatch[1]);
+
+  const autoSelectMatch = pathname.match(/^\/exams\/([^/]+)\/auto-select-preview$/);
+  if (autoSelectMatch && method === 'POST') return autoSelectPreview(request, env, autoSelectMatch[1]);
+
+  const autoReplaceMatch = pathname.match(/^\/exams\/([^/]+)\/auto-replace$/);
+  if (autoReplaceMatch && method === 'POST') return autoReplace(request, env, autoReplaceMatch[1]);
+
+  const addQuestionsMatch = pathname.match(/^\/exams\/([^/]+)\/questions$/);
+  if (addQuestionsMatch && method === 'PUT') return addQuestionsToExam(request, env, addQuestionsMatch[1]);
 
   const idMatch = pathname.match(/^\/exams\/([^/]+)$/);
   if (idMatch && method === 'GET') return getExam(request, env, idMatch[1]);

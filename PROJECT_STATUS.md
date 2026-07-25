@@ -38,6 +38,7 @@
 
 ### 5. Admin / Faculty Frontend (100% Complete)
 ✅ **Admin Panel**: Teacher interface (`admin.html`) built to search the 97,000 question bank and assemble custom exams with a click.
+✅ **Faculty Mode**: Subject-locked dashboard for faculty users to seamlessly navigate chapters and view analytics for their assigned subjects.
 
 ### 6. Post-Exam Analytics & Anti-Cheat (100% Complete)
 ✅ **Results View**: Built `results.html` to instantly display final scores, correct answers, and step-by-step explanations.

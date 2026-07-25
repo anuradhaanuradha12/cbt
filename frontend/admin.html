@@ -86,6 +86,10 @@
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
                         User Management
                     </a>
+                    <a href="#tasks" data-tab="tasks" id="navTasks" class="nav-link hidden items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
+                        Pending Tasks
+                    </a>
                 </nav>
             </div>
 
@@ -191,6 +195,10 @@
                                         <input type="text" id="targetBatch" placeholder="Global (Leave empty)" class="bg-slate-900 border border-slate-700 text-slate-200 text-sm rounded-lg focus:ring-cyan-500 focus:border-cyan-500 block w-full p-2.5 transition-colors">
                                     </div>
                                     <div>
+                                        <label class="block mb-2 text-sm font-medium text-slate-300">Quotas (JSON)</label>
+                                        <input type="text" id="subjectQuotas" placeholder='e.g., {"physics": 30, "chemistry": 30}' class="bg-slate-900 border border-slate-700 text-slate-200 text-sm rounded-lg focus:ring-cyan-500 focus:border-cyan-500 block w-full p-2.5 transition-colors">
+                                    </div>
+                                    <div>
                                         <label class="block mb-2 text-sm font-medium text-slate-300">Status</label>
                                         <select id="examStatus" class="bg-slate-900 border border-slate-700 text-slate-300 text-sm rounded-lg focus:ring-cyan-500 focus:border-cyan-500 block w-full p-2.5 transition-colors">
                                             <option value="draft">Draft</option>
@@ -217,6 +225,27 @@
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
                                 Create Exam
                             </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ─── Tab: Pending Tasks ────────────────────────────────────────── -->
+            <section id="tab-tasks" class="tab-pane h-full p-6">
+                <div class="max-w-4xl mx-auto glass-panel rounded-xl shadow-2xl overflow-hidden border-t-4 border-t-amber-500 flex flex-col h-full">
+                    <div class="px-8 py-6 border-b border-slate-800 bg-slate-900/50 flex justify-between items-center">
+                        <div>
+                            <h2 class="text-xl font-bold text-slate-100 flex items-center gap-3">
+                                <svg class="w-6 h-6 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
+                                Pending Exam Tasks
+                            </h2>
+                            <p class="text-slate-400 text-sm mt-1">Select an exam to fill the requested question quotas.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="p-8 flex-1 overflow-y-auto">
+                        <div id="tasksList" class="space-y-4">
+                            <!-- Tasks injected here -->
                         </div>
                     </div>
                 </div>

@@ -56,6 +56,7 @@ CREATE TABLE IF NOT EXISTS exams (
   status         TEXT NOT NULL DEFAULT 'draft'
                    CHECK(status IN ('draft','published','ongoing','completed','archived')),
   config_snapshot TEXT,               -- immutable JSON, set on publish
+  subject_quotas  TEXT,               -- JSON specifying quotas e.g. {"physics":30}
   starts_at      INTEGER,             -- unix timestamp
   ends_at        INTEGER,             -- starts_at + duration_minutes * 60
   created_by     TEXT REFERENCES users(id),

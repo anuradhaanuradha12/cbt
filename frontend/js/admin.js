@@ -29,11 +29,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Lock the subject filter to the faculty's subject
         const filterSubject = document.getElementById('filterSubject');
         if (filterSubject) {
-            filterSubject.value = user.subject;
+            filterSubject.value = user.subject.toLowerCase();
             filterSubject.disabled = true;
             
             // Trigger change event to load chapters for this subject
-            filterSubject.dispatchEvent(new Event('change'));
+            setTimeout(() => filterSubject.dispatchEvent(new Event('change')), 0);
         }
     }
 
@@ -58,8 +58,98 @@ document.addEventListener('DOMContentLoaded', async () => {
             tabPanes.forEach(p => p.classList.remove('active'));
             const tabId = clickedLink.getAttribute('data-tab');
             document.getElementById(`tab-${tabId}`).classList.add('active');
+            
+            if (tabId === 'tasks') {
+                loadTasks(user);
+            }
         });
     });
+
+    async function loadTasks(user) {
+        const tasksList = document.getElementById('tasksList');
+        tasksList.innerHTML = '<div class="text-slate-400 text-center animate-pulse py-8">Loading tasks...</div>';
+        
+        try {
+            const res = await api.request('/exams?status=draft');
+            const exams = res.filter(e => {
+                if (!e.subject_quotas) return false;
+                let quotas = {};
+                try { quotas = JSON.parse(e.subject_quotas); } catch(e) {}
+                // If user has a subject, only show if there's a quota for it
+                if (user.subject && !quotas[user.subject]) return false;
+                return true;
+            });
+            
+            if (exams.length === 0) {
+                tasksList.innerHTML = '<p class="text-slate-500 text-sm text-center py-8 italic bg-slate-900/30 rounded-lg border border-dashed border-slate-800">No pending tasks found for your subject.</p>';
+                return;
+            }
+            
+            tasksList.innerHTML = exams.map(exam => {
+                let quotas = {};
+                try { quotas = JSON.parse(exam.subject_quotas); } catch(e) {}
+                const userQuota = user.subject ? quotas[user.subject] : JSON.stringify(quotas);
+                
+                return `
+                <div class="p-5 bg-slate-800/50 rounded-xl border border-slate-700 hover:border-amber-500/50 transition-colors">
+                    <div class="flex justify-between items-start mb-3">
+                        <div>
+                            <h3 class="text-lg font-semibold text-slate-200">${exam.title}</h3>
+                            <p class="text-sm text-slate-400 mt-1">${exam.description || 'No description'}</p>
+                        </div>
+                        <span class="px-3 py-1 bg-amber-500/20 text-amber-400 text-xs font-bold rounded-full border border-amber-500/30">
+                            Quota: ${userQuota}
+                        </span>
+                    </div>
+                    <div class="mt-4 flex gap-3">
+                        <button onclick="startAutoSelect('${exam.id}', '${user.subject}', ${userQuota})" class="flex-1 bg-amber-600 hover:bg-amber-700 text-white font-medium rounded-lg text-sm px-4 py-2 transition-colors flex items-center justify-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+                            Auto-Select Questions
+                        </button>
+                    </div>
+                </div>
+                `;
+            }).join('');
+            
+        } catch (error) {
+            tasksList.innerHTML = `<p class="text-red-400 text-sm">Failed to load tasks: ${error.message}</p>`;
+        }
+    }
+    
+    // Make startAutoSelect available globally for the inline onclick handler
+    window.startAutoSelect = async (examId, subject, count) => {
+        if (!subject) {
+            alert('Admin users must select a subject first (not implemented in this prototype).');
+            return;
+        }
+        
+        // Ask for chapters
+        const chaptersStr = prompt(`Enter chapters for ${subject} (comma separated) to auto-select ${count} questions:`);
+        if (!chaptersStr) return;
+        const chapters = chaptersStr.split(',').map(s => s.trim()).filter(Boolean);
+        if (chapters.length === 0) return;
+        
+        try {
+            const previewRes = await api.request(`/exams/${examId}/auto-select-preview`, 'POST', {
+                subject, chapters, count
+            });
+            
+            if (previewRes.length === 0) {
+                alert('No questions found for the given criteria.');
+                return;
+            }
+            
+            if (confirm(`Found ${previewRes.length} questions (some might be previously used). Do you want to add them to this exam?`)) {
+                await api.request(`/exams/${examId}/questions`, 'PUT', {
+                    question_ids: previewRes.map(q => ({ id: q.id, marks: 4, negative_marks: 1 }))
+                });
+                alert('Successfully filled your quota for this exam!');
+                loadTasks(user);
+            }
+        } catch (error) {
+            alert('Failed auto-select: ' + error.message);
+        }
+    };
 
     // State Variables
     let currentPage = 1;
@@ -299,14 +389,35 @@ document.addEventListener('DOMContentLoaded', async () => {
         const description = document.getElementById('examDescription').value.trim();
         const duration = parseInt(document.getElementById('examDuration').value);
         const status = document.getElementById('examStatus').value;
+        const subjectQuotasRaw = document.getElementById('subjectQuotas').value.trim();
+        
+        let subjectQuotas = null;
+        if (subjectQuotasRaw) {
+            try {
+                subjectQuotas = JSON.parse(subjectQuotasRaw);
+            } catch (e) {
+                alert('Invalid JSON for Subject Quotas.');
+                return;
+            }
+        }
         
         if (!title) {
             alert('Please enter an exam title.');
             return;
         }
-        if (selectedQuestions.length === 0) {
-            alert('Please add at least one question to the exam.');
+        if (selectedQuestions.length === 0 && !subjectQuotas) {
+            alert('Please add at least one question or specify subject quotas.');
             return;
+        }
+        if (status === 'published' && selectedQuestions.length === 0) {
+            alert('Cannot publish an exam with no questions.');
+            return;
+        }
+        
+        let calculatedTotalMarks = selectedQuestions.length * 4;
+        if (subjectQuotas && selectedQuestions.length === 0) {
+            const totalQs = Object.values(subjectQuotas).reduce((a, b) => a + b, 0);
+            calculatedTotalMarks = totalQs * 4;
         }
         
         btnCreateExam.disabled = true;
@@ -319,8 +430,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 description,
                 exam_type: 'custom',
                 duration_minutes: duration,
-                total_marks: selectedQuestions.length * 4,
+                total_marks: calculatedTotalMarks,
                 target_batch: targetBatchVal ? targetBatchVal : undefined,
+                subject_quotas: subjectQuotas,
                 question_ids: selectedQuestions.map(q => ({ id: q.id, marks: 4, negative_marks: 1 }))
             };
             
