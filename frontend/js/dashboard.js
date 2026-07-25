@@ -20,7 +20,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
         // Fetch all exams
         const response = await api.request('/exams');
-        const exams = response.exams;
+        const exams = Array.isArray(response) ? response : response.exams;
         
         if (exams.length === 0) {
             examGrid.innerHTML = '<p style="color: var(--text-muted)">No exams available at the moment.</p>';
