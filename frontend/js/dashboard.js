@@ -11,6 +11,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     const user = JSON.parse(userStr);
     
+    if (user.role === 'admin' || user.role === 'faculty') {
+        window.location.href = 'admin.html';
+        return;
+    }
+    
     // Set user info in UI
     document.getElementById('welcomeMessage').textContent = `Hello, ${user.email.split('@')[0]}`;
     document.getElementById('userAvatar').textContent = user.email.charAt(0).toUpperCase();

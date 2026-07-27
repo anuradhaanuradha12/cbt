@@ -230,22 +230,91 @@ export async function getMyResult(request: Request, env: Env, examId: string): P
 // All results for faculty/admin. Includes rank ordering.
 
 export async function getReport(request: Request, env: Env, examId: string): Promise<Response> {
-  const { error } = await requireAuth(request, env, ['admin', 'faculty']);
+  const { ctx, error } = await requireAuth(request, env, ['admin', 'faculty']);
   if (error) return error;
 
-  const [exam, submissions, attempts] = await Promise.all([
-    env.DB.prepare('SELECT id, title, total_marks FROM exams WHERE id = ?').bind(examId).first(),
-    env.DB.prepare(
-      'SELECT s.*, u.name, u.email FROM submissions s JOIN users u ON u.id = s.student_id WHERE s.exam_id = ? ORDER BY s.score DESC'
-    ).bind(examId).all(),
-    env.DB.prepare(
-      'SELECT status, COUNT(*) as count FROM exam_attempts WHERE exam_id = ? GROUP BY status'
-    ).bind(examId).all(),
-  ]);
-
+  const exam = await env.DB.prepare('SELECT id, title, total_marks FROM exams WHERE id = ?').bind(examId).first();
   if (!exam) return json404('Exam not found');
 
-  const scores = (submissions.results as Array<{ score: number }>).map(s => s.score).filter(Boolean);
+  const attempts = await env.DB.prepare(
+    'SELECT status, COUNT(*) as count FROM exam_attempts WHERE exam_id = ? GROUP BY status'
+  ).bind(examId).all();
+
+  let submissionsQuery = '';
+  let submissionsParams: any[] = [];
+  
+  let chaptersQuery = '';
+  let chaptersParams: any[] = [];
+
+  if (ctx.user.role === 'faculty' && ctx.user.subject) {
+    submissionsQuery = `
+      SELECT 
+        s.id as submission_id,
+        s.student_id,
+        u.name,
+        u.email,
+        SUM(sa.marks_awarded) as score,
+        SUM(CASE WHEN sa.is_correct = 1 THEN 1 ELSE 0 END) as total_correct,
+        SUM(CASE WHEN sa.is_correct = 0 THEN 1 ELSE 0 END) as total_wrong,
+        SUM(CASE WHEN sa.is_correct IS NULL THEN 1 ELSE 0 END) as total_unattempted
+      FROM submissions s
+      JOIN users u ON u.id = s.student_id
+      JOIN submission_answers sa ON s.id = sa.submission_id
+      JOIN questions q ON q.id = sa.question_id
+      WHERE s.exam_id = ? AND q.subject = ?
+      GROUP BY s.id, s.student_id, u.name, u.email
+      ORDER BY score DESC
+    `;
+    submissionsParams = [examId, ctx.user.subject];
+
+    chaptersQuery = `
+      SELECT 
+        q.chapter,
+        q.subject,
+        COUNT(sa.question_id) as total_attempts,
+        SUM(CASE WHEN sa.is_correct = 1 THEN 1 ELSE 0 END) as total_correct,
+        CAST(SUM(CASE WHEN sa.is_correct = 1 THEN 1 ELSE 0 END) AS REAL) / COUNT(sa.question_id) * 100 as accuracy_percentage
+      FROM submission_answers sa
+      JOIN questions q ON q.id = sa.question_id
+      JOIN submissions s ON s.id = sa.submission_id
+      WHERE s.exam_id = ? AND q.subject = ?
+      GROUP BY q.chapter, q.subject
+      ORDER BY accuracy_percentage ASC
+    `;
+    chaptersParams = [examId, ctx.user.subject];
+  } else {
+    submissionsQuery = `
+      SELECT s.*, u.name, u.email 
+      FROM submissions s 
+      JOIN users u ON u.id = s.student_id 
+      WHERE s.exam_id = ? 
+      ORDER BY s.score DESC
+    `;
+    submissionsParams = [examId];
+
+    chaptersQuery = `
+      SELECT 
+        q.chapter,
+        q.subject,
+        COUNT(sa.question_id) as total_attempts,
+        SUM(CASE WHEN sa.is_correct = 1 THEN 1 ELSE 0 END) as total_correct,
+        CAST(SUM(CASE WHEN sa.is_correct = 1 THEN 1 ELSE 0 END) AS REAL) / COUNT(sa.question_id) * 100 as accuracy_percentage
+      FROM submission_answers sa
+      JOIN questions q ON q.id = sa.question_id
+      JOIN submissions s ON s.id = sa.submission_id
+      WHERE s.exam_id = ?
+      GROUP BY q.chapter, q.subject
+      ORDER BY accuracy_percentage ASC
+    `;
+    chaptersParams = [examId];
+  }
+
+  const [submissions, chapterPerformance] = await Promise.all([
+    env.DB.prepare(submissionsQuery).bind(...submissionsParams).all(),
+    env.DB.prepare(chaptersQuery).bind(...chaptersParams).all(),
+  ]);
+
+  const scores = (submissions.results as Array<{ score: number }>).map(s => s.score).filter(s => s != null);
   const stats = {
     total_submissions: submissions.results.length,
     average_score: scores.length ? scores.reduce((a, b) => a + b, 0) / scores.length : 0,
@@ -254,7 +323,7 @@ export async function getReport(request: Request, env: Env, examId: string): Pro
     attempt_breakdown: attempts.results,
   };
 
-  return json({ exam, stats, results: submissions.results });
+  return json({ exam, stats, chapter_performance: chapterPerformance.results, results: submissions.results });
 }
 
 // ── Route Dispatcher ─────────────────────────────────────────

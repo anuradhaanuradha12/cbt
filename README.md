@@ -105,9 +105,9 @@ npm run dev
 | POST   | `/attempts/:id/heartbeat`      | student             |
 | POST   | `/events`                      | student             |
 | POST   | `/submissions`                 | student             |
-| POST   | `/submissions/draft`           | student             |
 | GET    | `/submissions/:exam_id`        | student             |
-| GET    | `/analytics/stats`             | admin/faculty       |
+| GET    | `/submissions/:exam_id/report` | faculty/admin (Role-Scoped Analytics) |
+| GET    | `/analytics/student/:id`       | admin/faculty/self  |
 
 ## Phase Roadmap
 
