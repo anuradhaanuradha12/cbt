@@ -13,6 +13,15 @@ A multi-tenant, white-labeled **Computer-Based Testing (CBT) platform** for coll
 | Frontend | Vanilla HTML/CSS/JS (Zero build steps)    |
 | Auth     | JWT via Web Crypto API (PBKDF2 passwords) |
 
+## Core Features
+
+- **Progressive Web App (PWA):** Fully responsive on mobile. Can be installed directly to the home screen (Standalone Mode) on iOS and Android.
+- **Strict Anti-Cheat:** 
+  - **PC:** Enforces Fullscreen API, disables copy/paste, right-click, and tracks tab-switching.
+  - **Mobile PWA:** Intelligently disables strict Fullscreen API checks to prevent false strikes on iOS, while heavily enforcing `visibilitychange` (app switching) penalties.
+- **Dynamic Exam Generation:** Custom UI for selecting JEE (25 Qs/subject), NEET (45 Qs/subject), or Custom exam quota generation.
+- **Modern UI:** Designed with the StepVista Light Mode (Indigo accents, bright interfaces, glassmorphism panels).
+
 ## Monorepo Structure
 
 ```
