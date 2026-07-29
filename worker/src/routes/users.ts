@@ -12,6 +12,19 @@ function generateId(): string {
 
 // ── POST /users/bulk ──────────────────────────────────────────
 
+export async function getUsers(request: Request, env: Env): Promise<Response> {
+  const { error } = await requireAuth(request, env, ['admin', 'faculty']);
+  if (error) return error;
+
+  const users = await env.DB.prepare(
+    `SELECT id, name, email, batch_name, created_at FROM users WHERE role = 'student' ORDER BY created_at DESC`
+  ).all();
+
+  return json(users.results);
+}
+
+// ── POST /users/bulk ──────────────────────────────────────────
+
 export async function bulkImportUsers(request: Request, env: Env): Promise<Response> {
   const { error } = await requireAuth(request, env, ['admin']);
   if (error) return error;
@@ -91,6 +104,10 @@ export async function usersRouter(
   pathname: string
 ): Promise<Response | null> {
   const method = request.method;
+
+  if (pathname === '/users' && method === 'GET') {
+    return getUsers(request, env);
+  }
 
   if (pathname === '/users/bulk' && method === 'POST') {
     return bulkImportUsers(request, env);

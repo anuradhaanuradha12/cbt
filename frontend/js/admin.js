@@ -18,6 +18,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Role-based UI updates
     document.getElementById('userName').textContent = user.name;
+        // Analytics is visible to both admin and faculty
+    const navAnalytics = document.getElementById('navAnalytics');
+    if (navAnalytics) {
+        navAnalytics.classList.remove('hidden');
+        navAnalytics.classList.add('flex');
+    }
+
     if (user.role === 'admin') {
         document.getElementById('navUsers').classList.remove('hidden');
         document.getElementById('navUsers').classList.add('flex');
@@ -681,4 +688,134 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Init
     loadQuestions();
+
+    // ==========================================
+    // User Management & Analytics
+    // ==========================================
+
+    window.loadUsersList = async () => {
+        const usersList = document.getElementById('usersList');
+        const usersLoading = document.getElementById('usersLoading');
+        
+        if (!usersList) return;
+        
+        usersList.innerHTML = '';
+        usersLoading.classList.remove('hidden');
+        
+        try {
+            const users = await api.request('/users', 'GET');
+            usersLoading.classList.add('hidden');
+            
+            if (users.length === 0) {
+                usersList.innerHTML = '<tr><td colspan="4" class="text-center py-8 text-gray-500 italic text-sm">No students found.</td></tr>';
+                return;
+            }
+            
+            usersList.innerHTML = users.map(u => `
+                <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="py-3 px-6 text-gray-900 font-medium">${u.name}</td>
+                    <td class="py-3 px-6 text-gray-600">${u.email}</td>
+                    <td class="py-3 px-6">
+                        ${u.batch_name 
+                            ? `<span class="px-2.5 py-1 bg-indigo-50 text-indigo-600 rounded-full text-xs font-semibold border border-indigo-200">${u.batch_name}</span>` 
+                            : `<span class="text-gray-400 text-xs italic">Unassigned</span>`}
+                    </td>
+                    <td class="py-3 px-6 text-right">
+                        <button onclick="openAnalytics('${u.id}', '${u.name}')" class="text-xs bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded shadow-sm transition-colors flex items-center gap-1.5 ml-auto">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                            View Analytics
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+            
+        } catch (error) {
+            usersLoading.classList.add('hidden');
+            usersList.innerHTML = `<tr><td colspan="4" class="text-center py-8 text-red-500 text-sm">Error: ${error.message}</td></tr>`;
+        }
+    };
+
+    window.openAnalytics = (studentId, studentName) => {
+        // Switch tab
+        const navAnalytics = document.getElementById('navAnalytics');
+        if (navAnalytics) navAnalytics.click();
+        
+        // Setup UI
+        document.getElementById('analyticsStudentName').textContent = `${studentName}'s Analytics`;
+        document.getElementById('analyticsPlaceholder').classList.add('hidden');
+        const content = document.getElementById('analyticsContent');
+        content.classList.remove('hidden');
+        content.style.opacity = '0.5';
+        
+        loadAnalyticsData(studentId);
+    };
+
+    async function loadAnalyticsData(studentId) {
+        try {
+            const data = await api.request(`/analytics/student/${studentId}`, 'GET');
+            
+            // Overall Stats
+            const overall = data.overall || { total_exams: 0, average_score: 0, total_correct: 0, total_wrong: 0, total_unattempted: 0 };
+            document.getElementById('statTotalExams').textContent = overall.total_exams || 0;
+            document.getElementById('statAvgScore').textContent = (overall.average_score || 0).toFixed(1) + '%';
+            document.getElementById('statTotalCorrect').textContent = overall.total_correct || 0;
+            document.getElementById('statTotalWrong').textContent = overall.total_wrong || 0;
+            
+            // Subject Performance (CSS Bars)
+            const subjectsContainer = document.getElementById('analyticsSubjects');
+            if (!data.subjects || data.subjects.length === 0) {
+                subjectsContainer.innerHTML = '<p class="text-sm text-gray-500 italic">No subject data available.</p>';
+            } else {
+                subjectsContainer.innerHTML = data.subjects.map(sub => {
+                    const total = sub.total_correct + sub.total_wrong;
+                    const correctPct = total === 0 ? 0 : Math.round((sub.total_correct / total) * 100);
+                    const wrongPct = total === 0 ? 0 : Math.round((sub.total_wrong / total) * 100);
+                    
+                    return `
+                        <div>
+                            <div class="flex justify-between text-sm mb-1">
+                                <span class="font-medium text-gray-700 capitalize">${sub.subject}</span>
+                                <span class="text-gray-500">${sub.total_correct} correct / ${sub.total_wrong} wrong</span>
+                            </div>
+                            <div class="w-full bg-gray-100 rounded-full h-3.5 flex overflow-hidden border border-gray-200">
+                                <div class="bg-green-500 h-3.5 transition-all duration-1000" style="width: ${correctPct}%" title="${correctPct}% Correct"></div>
+                                <div class="bg-red-500 h-3.5 transition-all duration-1000" style="width: ${wrongPct}%" title="${wrongPct}% Wrong"></div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+            
+            // Chapter Weaknesses
+            const chaptersContainer = document.getElementById('analyticsChapters');
+            if (!data.chapters || data.chapters.length === 0) {
+                chaptersContainer.innerHTML = '<tr><td colspan="3" class="py-4 text-center text-sm text-gray-500 italic">No chapter data available.</td></tr>';
+            } else {
+                chaptersContainer.innerHTML = data.chapters.map(chap => `
+                    <tr class="hover:bg-gray-50/50 transition-colors">
+                        <td class="py-2.5 font-medium text-gray-800 text-xs truncate max-w-[200px]" title="${chap.chapter}">${chap.chapter}</td>
+                        <td class="py-2.5 text-center text-xs">
+                            <span class="px-2 py-0.5 bg-gray-100 text-gray-600 rounded capitalize border border-gray-200">${chap.subject}</span>
+                        </td>
+                        <td class="py-2.5 text-right font-bold text-red-500">${chap.total_wrong}</td>
+                    </tr>
+                `).join('');
+            }
+            
+            document.getElementById('analyticsContent').style.opacity = '1';
+            
+        } catch (error) {
+            document.getElementById('analyticsContent').style.opacity = '1';
+            alert('Failed to load analytics: ' + error.message);
+        }
+    }
+
+    // Load users on tab switch to 'users'
+    const usersTabLink = document.querySelector('[data-tab="users"]');
+    if (usersTabLink) {
+        usersTabLink.addEventListener('click', () => {
+            loadUsersList();
+        });
+    }
+
 });

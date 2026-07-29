@@ -92,16 +92,20 @@
                 
                 <nav class="px-4 space-y-1">
                     <a href="#questions" data-tab="questions" class="nav-link active flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg bg-indigo-500/10 text-indigo-400 transition-colors">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
-                        Exams & Questions
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
+                        Pending Tasks
                     </a>
-                    <a href="#users" data-tab="users" id="navUsers" class="nav-link hidden items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg text-gray-600 hover:text-gray-900 hover:bg-white/50 transition-colors">
+                                        <a href="#users" data-tab="users" id="navUsers" class="nav-link hidden items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg text-gray-600 hover:text-gray-900 hover:bg-white/50 transition-colors">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
                         User Management
                     </a>
                     <a href="#tasks" data-tab="tasks" id="navTasks" class="nav-link hidden items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg text-gray-600 hover:text-gray-900 hover:bg-white/50 transition-colors">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
                         Pending Tasks
+                    </a>
+                    <a href="#analytics" data-tab="analytics" id="navAnalytics" class="nav-link hidden items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg text-gray-600 hover:text-gray-900 hover:bg-white/50 transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                        Analytics
                     </a>
                 </nav>
             </div>
@@ -320,7 +324,127 @@
                             </button>
                         </div>
 
-                        <div id="csvUploadStatus" class="mt-6 hidden p-4 rounded-lg text-sm"></div>
+                                                <div id="csvUploadStatus" class="mt-6 hidden p-4 rounded-lg text-sm"></div>
+                    </div>
+                </div>
+
+                <!-- List of Users -->
+                <div class="w-full max-w-4xl mx-auto mt-8 glass-panel rounded-xl shadow-2xl overflow-hidden border-t-4 border-t-indigo-300">
+                    <div class="px-8 py-4 border-b border-gray-200 bg-gray-50/50 flex justify-between items-center">
+                        <h2 class="text-lg font-bold text-gray-900 flex items-center gap-2">
+                            <svg class="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                            Registered Students
+                        </h2>
+                        <button onclick="loadUsersList()" class="text-xs bg-white hover:bg-gray-50 text-gray-600 border border-gray-300 px-3 py-1.5 rounded flex items-center gap-1 transition">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                            Refresh
+                        </button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full text-sm">
+                            <thead>
+                                <tr class="text-left text-gray-500 border-b border-gray-100 bg-white/50">
+                                    <th class="py-3 px-6 font-medium">Name</th>
+                                    <th class="py-3 px-6 font-medium">Email</th>
+                                    <th class="py-3 px-6 font-medium">Batch</th>
+                                    <th class="py-3 px-6 font-medium text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="usersList" class="divide-y divide-gray-100 bg-white">
+                                <!-- Users Injected Here -->
+                            </tbody>
+                        </table>
+                        <div id="usersLoading" class="hidden py-12 text-center text-gray-500 text-sm">
+                            Loading students...
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- --- Tab: Analytics ------------------------------------------------ -->
+            <section id="tab-analytics" class="tab-pane h-full p-6 overflow-y-auto w-full">
+                <div class="max-w-[1600px] mx-auto pb-20 md:pb-0">
+                    <div class="flex justify-between items-center mb-6">
+                        <div>
+                            <h2 class="text-2xl font-bold text-gray-900" id="analyticsStudentName">Student Analytics</h2>
+                            <p class="text-sm text-gray-500 mt-1">Detailed performance breakdown</p>
+                        </div>
+                        <button onclick="document.querySelector('[data-tab=\'users\']').click()" class="text-sm px-4 py-2 bg-white text-gray-700 rounded-lg border border-gray-300 hover:bg-gray-50 transition">Back to Users</button>
+                    </div>
+
+                    <div id="analyticsPlaceholder" class="glass-panel rounded-xl p-12 text-center text-gray-500">
+                        Select a student from User Management to view their analytics.
+                    </div>
+
+                    <div id="analyticsContent" class="hidden space-y-6">
+                        <!-- Overall Stats -->
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div class="glass-panel p-4 rounded-xl flex items-center justify-between">
+                                <div>
+                                    <p class="text-xs text-gray-500 font-semibold uppercase tracking-wide">Total Exams</p>
+                                    <h3 class="text-2xl font-bold text-gray-900 mt-1" id="statTotalExams">0</h3>
+                                </div>
+                                <div class="w-10 h-10 rounded-full bg-indigo-50 text-indigo-500 flex items-center justify-center">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+                                </div>
+                            </div>
+                            <div class="glass-panel p-4 rounded-xl flex items-center justify-between">
+                                <div>
+                                    <p class="text-xs text-gray-500 font-semibold uppercase tracking-wide">Avg Score</p>
+                                    <h3 class="text-2xl font-bold text-gray-900 mt-1" id="statAvgScore">0%</h3>
+                                </div>
+                                <div class="w-10 h-10 rounded-full bg-emerald-50 text-emerald-500 flex items-center justify-center">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
+                                </div>
+                            </div>
+                            <div class="glass-panel p-4 rounded-xl flex items-center justify-between">
+                                <div>
+                                    <p class="text-xs text-gray-500 font-semibold uppercase tracking-wide">Total Correct</p>
+                                    <h3 class="text-2xl font-bold text-gray-900 mt-1" id="statTotalCorrect">0</h3>
+                                </div>
+                                <div class="w-10 h-10 rounded-full bg-green-50 text-green-500 flex items-center justify-center">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                </div>
+                            </div>
+                            <div class="glass-panel p-4 rounded-xl flex items-center justify-between">
+                                <div>
+                                    <p class="text-xs text-gray-500 font-semibold uppercase tracking-wide">Total Wrong</p>
+                                    <h3 class="text-2xl font-bold text-gray-900 mt-1" id="statTotalWrong">0</h3>
+                                </div>
+                                <div class="w-10 h-10 rounded-full bg-red-50 text-red-500 flex items-center justify-center">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <!-- Subject Performance (CSS Chart) -->
+                            <div class="glass-panel p-6 rounded-xl">
+                                <h3 class="text-lg font-bold text-gray-900 border-b border-gray-100 pb-3 mb-4">Subject Performance</h3>
+                                <div id="analyticsSubjects" class="space-y-4">
+                                    <!-- CSS Progress Bars Injected Here -->
+                                </div>
+                            </div>
+
+                            <!-- Weak Chapters -->
+                            <div class="glass-panel p-6 rounded-xl">
+                                <h3 class="text-lg font-bold text-gray-900 border-b border-gray-100 pb-3 mb-4">Areas for Improvement</h3>
+                                <div class="overflow-hidden">
+                                    <table class="min-w-full text-sm">
+                                        <thead>
+                                            <tr class="text-left text-gray-500 border-b border-gray-100">
+                                                <th class="py-2 font-medium">Chapter</th>
+                                                <th class="py-2 font-medium text-center">Subject</th>
+                                                <th class="py-2 font-medium text-right text-red-500">Errors</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="analyticsChapters" class="divide-y divide-gray-100">
+                                            <!-- Chapters Injected Here -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </section>
