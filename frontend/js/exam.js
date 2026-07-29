@@ -3,7 +3,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Auth Check
     const token = api.getToken();
     if (!token) {
-        window.location.href = 'index.html';
+        window.location.href = '/';
         return;
     }
 
@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const examId = urlParams.get('id');
     if (!examId) {
         alert("No exam ID provided!");
-        window.location.href = 'dashboard.html';
+        window.location.href = '/dashboard';
         return;
     }
 
@@ -65,7 +65,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         } catch (error) {
             console.error(error);
             alert("Failed to load exam details: " + error.message);
-            window.location.href = 'dashboard.html';
+            window.location.href = '/dashboard';
         }
     }
     
@@ -201,7 +201,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         } catch (error) {
             console.error(error);
             alert("Failed to start attempt: " + error.message);
-            window.location.href = 'dashboard.html';
+            window.location.href = '/dashboard';
         }
     }
 
@@ -482,7 +482,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             
             await api.request(`/submissions/${attemptData.id}`, 'POST', { responses: submissions });
             alert("Exam submitted successfully!");
-            window.location.href = `results.html?id=${examId}`;
+            window.location.href = `/results?id=${examId}`;
             
         } catch (error) {
             alert("Failed to submit exam: " + error.message);

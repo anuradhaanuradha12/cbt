@@ -1,11 +1,11 @@
-const CACHE_NAME = 'qforge-v1';
+const CACHE_NAME = 'qforge-v2';
 const ASSETS = [
-  './index.html',
-  './dashboard.html',
-  './admin.html',
-  './exam.html',
-  './results.html',
-  './question-gen.html',
+  '/',
+  '/dashboard',
+  '/admin',
+  '/exam',
+  '/results',
+  '/question-gen',
   './css/style.css',
   './js/api.js',
   './js/login.js',

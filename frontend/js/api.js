@@ -12,7 +12,7 @@ const api = {
     logout: () => {
         localStorage.removeItem('cbt_token');
         localStorage.removeItem('cbt_user');
-        window.location.href = 'index.html';
+        window.location.href = '/';
     },
     
     // Generic request handler

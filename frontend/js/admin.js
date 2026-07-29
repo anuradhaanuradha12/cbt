@@ -5,14 +5,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     const userStr = localStorage.getItem('cbt_user');
     
     if (!token || !userStr) {
-        window.location.href = 'index.html';
+        window.location.href = '/';
         return;
     }
     
     const user = JSON.parse(userStr);
     if (user.role !== 'admin' && user.role !== 'faculty') {
         alert("Access Denied: Admins or Faculty only.");
-        window.location.href = 'dashboard.html';
+        window.location.href = '/dashboard';
         return;
     }
 

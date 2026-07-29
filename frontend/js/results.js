@@ -3,7 +3,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Auth Check
     const token = api.getToken();
     if (!token) {
-        window.location.href = 'index.html';
+        window.location.href = '/';
         return;
     }
 
@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const examId = urlParams.get('id');
     if (!examId) {
         alert("No exam ID provided!");
-        window.location.href = 'dashboard.html';
+        window.location.href = '/dashboard';
         return;
     }
 

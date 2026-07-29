@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // If already logged in, redirect to dashboard
     if (api.getToken()) {
-        window.location.href = 'dashboard.html';
+        window.location.href = '/dashboard';
     }
     
     const setLoading = (isLoading) => {
@@ -57,9 +57,9 @@ document.addEventListener('DOMContentLoaded', () => {
             localStorage.setItem('cbt_user', JSON.stringify(response.user));
             // Redirect based on role
             if (response.user.role === 'admin' || response.user.role === 'faculty') {
-                window.location.href = 'admin.html';
+                window.location.href = '/admin';
             } else {
-                window.location.href = 'dashboard.html';
+                window.location.href = '/dashboard';
             }
         } catch (error) {
             showError(error.message || 'Invalid credentials or server offline.');

@@ -5,14 +5,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     const userStr = localStorage.getItem('cbt_user');
     
     if (!token || !userStr) {
-        window.location.href = 'index.html';
+        window.location.href = '/';
         return;
     }
     
     const user = JSON.parse(userStr);
     
     if (user.role === 'admin' || user.role === 'faculty') {
-        window.location.href = 'admin.html';
+        window.location.href = '/admin';
         return;
     }
     
@@ -57,10 +57,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                            Starts Soon
                        </button>`
                     : isEarlyAccess 
-                    ? `<button class="btn-primary" style="background: var(--warning); border-color: var(--warning); color: #000;" onclick="window.location.href='exam.html?id=${exam.id}'">
+                    ? `<button class="btn-primary" style="background: var(--warning); border-color: var(--warning); color: #000;" onclick="window.location.href='/exam?id=${exam.id}'">
                            Enter Waiting Room
                        </button>`
-                    : `<button class="btn-primary" onclick="window.location.href='exam.html?id=${exam.id}'">
+                    : `<button class="btn-primary" onclick="window.location.href='/exam?id=${exam.id}'">
                            Start Exam
                        </button>`
                 }
@@ -85,7 +85,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             btn.style.borderColor = 'var(--warning)';
                             btn.style.color = '#000';
                             btn.textContent = 'Enter Waiting Room';
-                            btn.onclick = () => window.location.href = `exam.html?id=${exam.id}`;
+                            btn.onclick = () => window.location.href = `/exam?id=${exam.id}`;
                             
                             // Remove the warning div
                             const warningDiv = btn.previousElementSibling;
