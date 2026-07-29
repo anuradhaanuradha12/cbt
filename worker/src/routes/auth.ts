@@ -33,9 +33,9 @@ export async function handleLogin(request: Request, env: Env): Promise<Response>
 
   // Fetch user — case-insensitive email lookup
   const user = await env.DB.prepare(
-    'SELECT id, email, role, name, subject, password_hash, is_active FROM users WHERE LOWER(email) = LOWER(?)'
+    'SELECT id, email, role, name, college_id, subject, password_hash, is_active FROM users WHERE LOWER(email) = LOWER(?)'
   ).bind(email.trim()).first<{
-    id: string; email: string; role: string; name: string; subject: string | null;
+    id: string; email: string; role: string; name: string; college_id: string; subject: string | null;
     password_hash: string; is_active: number;
   }>();
 
@@ -53,7 +53,7 @@ export async function handleLogin(request: Request, env: Env): Promise<Response>
   const sessionId = generateId();
 
   const token = await signJWT(
-    { sub: user.id, email: user.email, role: user.role as 'admin' | 'faculty' | 'student', name: user.name, subject: user.subject as any, sid: sessionId },
+    { sub: user.id, email: user.email, role: user.role as 'admin' | 'faculty' | 'student' | 'content-creator', name: user.name, college_id: user.college_id, subject: user.subject as any, sid: sessionId },
     env.JWT_SECRET
   );
 

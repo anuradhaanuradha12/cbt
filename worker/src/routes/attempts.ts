@@ -27,8 +27,8 @@ export async function startAttempt(request: Request, env: Env): Promise<Response
 
   // Verify exam exists and is published/ongoing
   const exam = await env.DB.prepare(
-    'SELECT id, status, starts_at, ends_at FROM exams WHERE id = ?'
-  ).bind(exam_id).first<{ id: string; status: string; starts_at: number; ends_at: number }>();
+    'SELECT id, status, starts_at, ends_at FROM exams WHERE id = ? AND college_id = ?'
+  ).bind(exam_id, ctx.user.college_id).first<{ id: string; status: string; starts_at: number; ends_at: number }>();
 
   if (!exam) return json404('Exam not found');
   if (exam.status !== 'published' && exam.status !== 'ongoing') {
@@ -64,9 +64,9 @@ export async function startAttempt(request: Request, env: Env): Promise<Response
   const attemptId = generateId();
 
   await env.DB.prepare(`
-    INSERT INTO exam_attempts (id, exam_id, student_id, ip_address, user_agent)
-    VALUES (?, ?, ?, ?, ?)
-  `).bind(attemptId, exam_id, ctx.user.sub, ip, ua).run();
+    INSERT INTO exam_attempts (id, exam_id, student_id, ip_address, user_agent, college_id)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `).bind(attemptId, exam_id, ctx.user.sub, ip, ua, ctx.user.college_id).run();
 
   return json({ attempt_id: attemptId, resumed: false }, 201);
 }
@@ -80,8 +80,8 @@ export async function heartbeat(request: Request, env: Env, attemptId: string): 
   if (error) return error;
 
   const attempt = await env.DB.prepare(
-    'SELECT id, student_id, status FROM exam_attempts WHERE id = ?'
-  ).bind(attemptId).first<{ id: string; student_id: string; status: string }>();
+    'SELECT id, student_id, status FROM exam_attempts WHERE id = ? AND college_id = ?'
+  ).bind(attemptId, ctx.user.college_id).first<{ id: string; student_id: string; status: string }>();
 
   if (!attempt) return json404('Attempt not found');
   if (attempt.student_id !== ctx.user.sub) return json403('Not your attempt');
@@ -113,8 +113,8 @@ export async function logEvent(request: Request, env: Env): Promise<Response> {
 
   // Verify the attempt belongs to this student
   const attempt = await env.DB.prepare(
-    'SELECT student_id FROM exam_attempts WHERE id = ?'
-  ).bind(attempt_id).first<{ student_id: string }>();
+    'SELECT student_id FROM exam_attempts WHERE id = ? AND college_id = ?'
+  ).bind(attempt_id, ctx.user.college_id).first<{ student_id: string }>();
 
   if (!attempt || attempt.student_id !== ctx.user.sub) return json404('Attempt not found');
 

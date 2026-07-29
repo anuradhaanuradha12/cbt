@@ -45,8 +45,8 @@ export async function listExams(request: Request, env: Env): Promise<Response> {
   const url = new URL(request.url);
   const status = url.searchParams.get('status') ?? '';
 
-  let query = 'SELECT * FROM exams';
-  const params: any[] = [];
+  let query = 'SELECT * FROM exams WHERE college_id = ?';
+  const params: any[] = [ctx.user.college_id];
   const filters: string[] = [];
 
   if (status) {
@@ -98,9 +98,9 @@ export async function createExam(request: Request, env: Env): Promise<Response> 
 
   // Insert exam
   await env.DB.prepare(`
-    INSERT INTO exams (id, title, description, exam_type, duration_minutes, total_marks, target_batch, subject_quotas, created_by)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).bind(examId, title, body.description ?? null, exam_type, duration_minutes, total_marks, target_batch || null, subject_quotas ? JSON.stringify(subject_quotas) : null, ctx.user.sub).run();
+    INSERT INTO exams (id, title, description, exam_type, duration_minutes, total_marks, target_batch, subject_quotas, college_id, created_by)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).bind(examId, title, body.description ?? null, exam_type, duration_minutes, total_marks, target_batch || null, subject_quotas ? JSON.stringify(subject_quotas) : null, ctx.user.college_id, ctx.user.sub).run();
 
   // Link questions
   if (Array.isArray(question_ids) && question_ids.length > 0) {
@@ -186,17 +186,15 @@ export async function getExam(request: Request, env: Env, examId: string): Promi
   return json({ ...payload, server_time: serverTime, from_cache: fromCache, is_early_access: isEarlyAccess });
 }
 
-// Code replaced above
-
 // ── PUT /exams/:id/publish ────────────────────────────────────
 // Freezes config_snapshot, sets starts_at/ends_at, sets status = 'published'.
 // After this point, scoring always reads from config_snapshot — immutable.
 
 export async function publishExam(request: Request, env: Env, examId: string): Promise<Response> {
-  const { error } = await requireAuth(request, env, ['admin']);
+  const { ctx, error } = await requireAuth(request, env, ['admin']);
   if (error) return error;
 
-  const exam = await env.DB.prepare('SELECT * FROM exams WHERE id = ?').bind(examId).first<Record<string, unknown>>();
+  const exam = await env.DB.prepare('SELECT * FROM exams WHERE id = ? AND college_id = ?').bind(examId, ctx.user.college_id).first<Record<string, unknown>>();
   if (!exam) return json404('Exam not found');
   if (exam['status'] !== 'draft') return json400(`Exam is already ${exam['status']}`);
 
@@ -234,7 +232,7 @@ export async function versionExam(request: Request, env: Env, examId: string): P
   const { ctx, error } = await requireAuth(request, env, ['admin', 'faculty']);
   if (error) return error;
 
-  const exam = await env.DB.prepare('SELECT * FROM exams WHERE id = ?').bind(examId).first<Record<string, unknown>>();
+  const exam = await env.DB.prepare('SELECT * FROM exams WHERE id = ? AND college_id = ?').bind(examId, ctx.user.college_id).first<Record<string, unknown>>();
   if (!exam) return json404('Exam not found');
 
   // Find the root exam id (parent or self)

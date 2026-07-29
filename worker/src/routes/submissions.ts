@@ -43,8 +43,8 @@ export async function submitExam(
 
   // ── Server-side timer check ────────────────────────────────
   const exam = await env.DB.prepare(
-    'SELECT ends_at, config_snapshot FROM exams WHERE id = ?'
-  ).bind(exam_id).first<{ ends_at: number; config_snapshot: string }>();
+    'SELECT ends_at, config_snapshot FROM exams WHERE id = ? AND college_id = ?'
+  ).bind(exam_id, authCtx.user.college_id).first<{ ends_at: number; config_snapshot: string }>();
 
   if (!exam) return json404('Exam not found');
 
@@ -63,9 +63,9 @@ export async function submitExam(
   // ── Create submission row (score computed async) ───────────
   const submissionId = generateId();
   await env.DB.prepare(`
-    INSERT INTO submissions (id, attempt_id, exam_id, student_id, time_taken_seconds)
-    VALUES (?, ?, ?, ?, ?)
-  `).bind(submissionId, attempt_id, exam_id, authCtx.user.sub, time_taken_seconds).run();
+    INSERT INTO submissions (id, attempt_id, exam_id, student_id, time_taken_seconds, college_id)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `).bind(submissionId, attempt_id, exam_id, authCtx.user.sub, time_taken_seconds, authCtx.user.college_id).run();
 
   // ── Insert submission_answers rows ─────────────────────────
   // Fetch question list for this exam to ensure we record all questions (even unattempted)
@@ -175,8 +175,8 @@ export async function saveDraft(request: Request, env: Env): Promise<Response> {
   const { exam_id, answers = {} } = body;
 
   // Get exam end time for KV TTL calculation
-  const exam = await env.DB.prepare('SELECT ends_at FROM exams WHERE id = ?')
-    .bind(exam_id).first<{ ends_at: number | null }>();
+  const exam = await env.DB.prepare('SELECT ends_at FROM exams WHERE id = ? AND college_id = ?')
+    .bind(exam_id, ctx.user.college_id).first<{ ends_at: number | null }>();
 
   const now = Math.floor(Date.now() / 1000);
   const ttl = exam?.ends_at
@@ -214,14 +214,14 @@ export async function getMyResult(request: Request, env: Env, examId: string): P
   if (error) return error;
 
   const submission = await env.DB.prepare(
-    'SELECT * FROM submissions WHERE exam_id = ? AND student_id = ?'
-  ).bind(examId, ctx.user.sub).first();
+    'SELECT * FROM submissions WHERE exam_id = ? AND student_id = ? AND college_id = ?'
+  ).bind(examId, ctx.user.sub, ctx.user.college_id).first<Record<string, unknown>>();
 
   if (!submission) return json404('No submission found for this exam');
 
   const answers = await env.DB.prepare(
     'SELECT sa.*, q.question_text, q.option_a, q.option_b, q.option_c, q.option_d, q.correct_answer, q.explanation FROM submission_answers sa JOIN questions q ON q.id = sa.question_id WHERE sa.submission_id = ?'
-  ).bind((submission as Record<string, unknown>)['id']).all();
+  ).bind(submission['id']).all();
 
   return json({ submission, answers: answers.results });
 }
@@ -233,12 +233,12 @@ export async function getReport(request: Request, env: Env, examId: string): Pro
   const { ctx, error } = await requireAuth(request, env, ['admin', 'faculty']);
   if (error) return error;
 
-  const exam = await env.DB.prepare('SELECT id, title, total_marks FROM exams WHERE id = ?').bind(examId).first();
+  const exam = await env.DB.prepare('SELECT id, title, total_marks FROM exams WHERE id = ? AND college_id = ?').bind(examId, ctx.user.college_id).first();
   if (!exam) return json404('Exam not found');
 
   const attempts = await env.DB.prepare(
-    'SELECT status, COUNT(*) as count FROM exam_attempts WHERE exam_id = ? GROUP BY status'
-  ).bind(examId).all();
+    'SELECT status, COUNT(*) as count FROM exam_attempts WHERE exam_id = ? AND college_id = ? GROUP BY status'
+  ).bind(examId, ctx.user.college_id).all<{ status: string; count: number }>();
 
   let submissionsQuery = '';
   let submissionsParams: any[] = [];

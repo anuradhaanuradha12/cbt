@@ -400,21 +400,99 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Exam Creation
     // ==========================================
 
+    const examTypeSelect = document.getElementById('examType');
+    const quotaInputsContainer = document.getElementById('quotaInputs');
+    const quotaTotalLabel = document.getElementById('quotaTotalLabel');
+    const examDurationInput = document.getElementById('examDuration');
+
+    const subjects = ['physics', 'chemistry', 'maths', 'biology'];
+
+    function renderQuotaInputs() {
+        const type = examTypeSelect.value;
+        quotaInputsContainer.innerHTML = '';
+        
+        let activeSubjects = [];
+        if (type === 'jee') {
+            activeSubjects = ['physics', 'chemistry', 'maths'];
+            examDurationInput.value = 180;
+        } else if (type === 'neet') {
+            activeSubjects = ['physics', 'chemistry', 'biology'];
+            examDurationInput.value = 200; // As requested, NEET time
+        } else {
+            activeSubjects = [...subjects];
+            // Don't auto-change time for custom
+        }
+
+        activeSubjects.forEach(sub => {
+            const div = document.createElement('div');
+            
+            let defaultVal = 0;
+            if (type === 'jee') defaultVal = 25;
+            if (type === 'neet' && (sub === 'physics' || sub === 'chemistry')) defaultVal = 45;
+            if (type === 'neet' && sub === 'biology') defaultVal = 90;
+
+            div.innerHTML = `
+                <label class="block mb-1 text-xs font-medium text-slate-400 capitalize flex justify-between">
+                    ${sub}
+                    ${type === 'custom' ? `<input type="checkbox" class="quota-toggle" data-subject="${sub}" checked>` : ''}
+                </label>
+                <input type="number" min="0" data-subject="${sub}" value="${defaultVal}" class="quota-input bg-slate-950 border border-slate-700 text-slate-200 text-sm rounded focus:ring-cyan-500 focus:border-cyan-500 block w-full p-2 transition-colors">
+            `;
+            quotaInputsContainer.appendChild(div);
+        });
+
+        updateTotal();
+
+        // Add listeners for total update
+        document.querySelectorAll('.quota-input, .quota-toggle').forEach(el => {
+            el.addEventListener('input', updateTotal);
+            el.addEventListener('change', updateTotal);
+        });
+    }
+
+    function updateTotal() {
+        let total = 0;
+        document.querySelectorAll('.quota-input').forEach(input => {
+            const sub = input.dataset.subject;
+            const toggle = document.querySelector(`.quota-toggle[data-subject="${sub}"]`);
+            if (!toggle || toggle.checked) {
+                total += parseInt(input.value || 0);
+            }
+        });
+        quotaTotalLabel.textContent = `Total: ${total} Qs`;
+    }
+
+    if (examTypeSelect) {
+        examTypeSelect.addEventListener('change', renderQuotaInputs);
+        renderQuotaInputs(); // initial render
+    }
+
     btnCreateExam.addEventListener('click', async () => {
         const title = document.getElementById('examTitle').value.trim();
         const description = document.getElementById('examDescription').value.trim();
         const duration = parseInt(document.getElementById('examDuration').value);
         const status = document.getElementById('examStatus').value;
-        const subjectQuotasRaw = document.getElementById('subjectQuotas').value.trim();
+        const examType = examTypeSelect ? examTypeSelect.value : 'custom';
         
-        let subjectQuotas = null;
-        if (subjectQuotasRaw) {
-            try {
-                subjectQuotas = JSON.parse(subjectQuotasRaw);
-            } catch (e) {
-                alert('Invalid JSON for Subject Quotas.');
-                return;
-            }
+        let subjectQuotas = {};
+        let hasQuotas = false;
+        
+        if (examTypeSelect) {
+            document.querySelectorAll('.quota-input').forEach(input => {
+                const sub = input.dataset.subject;
+                const toggle = document.querySelector(`.quota-toggle[data-subject="${sub}"]`);
+                if (!toggle || toggle.checked) {
+                    const count = parseInt(input.value || 0);
+                    if (count > 0) {
+                        subjectQuotas[sub] = count;
+                        hasQuotas = true;
+                    }
+                }
+            });
+        }
+        
+        if (!hasQuotas) {
+            subjectQuotas = null;
         }
         
         if (!title) {
@@ -444,7 +522,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const payload = {
                 title,
                 description,
-                exam_type: 'custom',
+                exam_type: examType,
                 duration_minutes: duration,
                 total_marks: calculatedTotalMarks,
                 target_batch: targetBatchVal ? targetBatchVal : undefined,

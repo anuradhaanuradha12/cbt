@@ -52,10 +52,23 @@
 ✅ **Pre-Exam Waiting Room**: Students can enter the exam 5 minutes early to view instructions and a live countdown timer. A **Zero-Leak Policy** dynamically strips the question payload at the edge cache layer if accessed early, ensuring questions cannot be exposed via network inspection.
 ✅ **Automated Parent Reports**: Configured `[triggers]` CRON handlers inside the Cloudflare Worker to automatically dispatch weekly performance reports.
 
+### 8. Phase 3: Question Forge (100% Complete)
+✅ **Isolated AI Database**: Deployed a completely separate D1 database (`cbt-qforge`) to ensure proprietary, AI-generated questions never mix with scraped datasets.
+✅ **Gemini 2.0 Integration**: Added AI pipeline to generate high-quality JEE/NEET/KCET questions, fully calibrated to strict difficulty standards with LaTeX parsing.
+✅ **Two-Level Approval Workflow**: Created a strict state machine (`draft` → `pending_ai_review` → `pending_human_approval` → `approved`).
+✅ **Intern Portal**: Built `question-gen.html` for `content-creator` roles to generate, edit, and attach images to questions using an interactive three-panel UI.
+
+### 9. Phase 4: QForge Multi-Tenant SaaS (100% Complete)
+✅ **Multi-Tenancy Isolation**: Injected `college_id` into all core exam delivery, attempt, and submission queries to ensure colleges only see their own students and exams. (Questions remain in a global bank).
+✅ **Rebranding to QForge**: Applied a fresh visual identity across all interfaces using StepVista styling (Zinc surfaces, Emerald accents) and the Gabarito font.
+✅ **Role & Subject Scoping**: Faculty accounts can be locked to a specific `college_id` and `subject`, enabling true multi-tenant management.
+✅ **Dynamic Exam Configuration**: Built an intelligent "Create Exam" UI for admins that replaces manual JSON quotas with dynamic stream selection (JEE / NEET / Custom), automatically pre-filling subject question counts and durations based on standardized patterns.
+
 ## Completed Deployment
-✅ **Cloudflare Deployment**: Database schema pushed to live D1 instance, questions dataset bulk-imported to the edge, API Worker deployed, and R2 media fully seeded. Remote API is accessible at `https://cbt-worker.shishira-932.workers.dev`.
+✅ **Cloudflare Deployment**: Database schemas pushed to live D1 instances (`cbt-platform` and `cbt-qforge`), questions dataset bulk-imported to the edge, API Worker deployed, and R2 media fully seeded. Remote API is accessible at `https://cbt-worker.shishira-932.workers.dev`.
 
 ## Accessing Local Dev
 - **Worker API**: `http://127.0.0.1:8787`
-- **Frontend**: Double click `frontend/index.html` in your browser.
-- **Test Credentials**: `admin@cbt.local` / `Admin@1234`
+- **Frontend**: Double click `frontend/index.html` or `frontend/question-gen.html` in your browser.
+- **Admin Test Credentials**: `admin@cbt.local` / `Admin@1234`
+- **Intern Creation**: Run `node worker/seed-content-creator.mjs` to bootstrap an intern account.

@@ -10,6 +10,7 @@ import { submissionsRouter } from './routes/submissions';
 import { usersRouter } from './routes/users';
 import { analyticsRouter } from './routes/analytics';
 import { imagesRouter } from './routes/images';
+import { forgeRouter } from './routes/forge';
 import { json, json404, handleOptions } from './middleware/responses';
 import type { Env } from './types';
 
@@ -50,6 +51,7 @@ export default {
       response ??= await submissionsRouter(request, env, ctx, pathname);
       response ??= await analyticsRouter(request, env, pathname);
       response ??= await imagesRouter(request, env, pathname);
+      response ??= await forgeRouter(request, env, pathname);
 
       return response ?? json404(`No route for ${request.method} ${pathname}`);
     } catch (e: any) {

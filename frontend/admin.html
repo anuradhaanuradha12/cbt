@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CBT Platform - Admin Panel</title>
+    <title>QForge - Admin Panel</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -65,6 +65,7 @@
             opacity: 1;
         }
     </style>
+<link href='https://fonts.googleapis.com/css2?family=Gabarito:wght@400;500;600;700&display=swap' rel='stylesheet'>
 </head>
 <body class="bg-slate-950 text-slate-200 h-screen overflow-hidden font-sans selection:bg-indigo-500/30">
 
@@ -73,7 +74,7 @@
         <aside class="w-64 glass-panel border-r border-slate-800 flex flex-col justify-between">
             <div>
                 <div class="p-6">
-                    <h1 class="text-xl font-bold bg-gradient-to-r from-indigo-400 to-cyan-400 bg-clip-text text-transparent tracking-tight">CBT Platform</h1>
+                    <h1 class="text-xl font-bold bg-gradient-to-r from-indigo-400 to-cyan-400 bg-clip-text text-transparent tracking-tight">QForge</h1>
                     <p class="text-xs text-slate-500 mt-1 uppercase tracking-wider font-semibold">Workspace</p>
                 </div>
                 
@@ -195,9 +196,24 @@
                                         <input type="text" id="targetBatch" placeholder="Global (Leave empty)" class="bg-slate-900 border border-slate-700 text-slate-200 text-sm rounded-lg focus:ring-cyan-500 focus:border-cyan-500 block w-full p-2.5 transition-colors">
                                     </div>
                                     <div>
-                                        <label class="block mb-2 text-sm font-medium text-slate-300">Quotas (JSON)</label>
-                                        <input type="text" id="subjectQuotas" placeholder='e.g., {"physics": 30, "chemistry": 30}' class="bg-slate-900 border border-slate-700 text-slate-200 text-sm rounded-lg focus:ring-cyan-500 focus:border-cyan-500 block w-full p-2.5 transition-colors">
+                                        <label class="block mb-2 text-sm font-medium text-slate-300">Exam Type</label>
+                                        <select id="examType" class="bg-slate-900 border border-slate-700 text-slate-200 text-sm rounded-lg focus:ring-cyan-500 focus:border-cyan-500 block w-full p-2.5 transition-colors">
+                                            <option value="jee">JEE Main (PCM)</option>
+                                            <option value="neet">NEET (PCB)</option>
+                                            <option value="custom">Custom Configuration</option>
+                                        </select>
                                     </div>
+                                </div>
+
+                                <!-- Dynamic Quota Inputs -->
+                                <div id="quotaInputsContainer" class="bg-slate-900/50 border border-slate-800 rounded-lg p-4 mt-4">
+                                    <h4 class="text-sm font-medium text-slate-300 mb-3 border-b border-slate-800 pb-2 flex justify-between items-center">
+                                        Subject Distribution
+                                        <span id="quotaTotalLabel" class="text-xs text-slate-500 font-normal">Total: 0 Qs</span>
+                                    </h4>
+                                    <!-- Inputs will be injected here via JS -->
+                                    <div id="quotaInputs" class="grid grid-cols-2 gap-4"></div>
+                                </div>
                                     <div>
                                         <label class="block mb-2 text-sm font-medium text-slate-300">Status</label>
                                         <select id="examStatus" class="bg-slate-900 border border-slate-700 text-slate-300 text-sm rounded-lg focus:ring-cyan-500 focus:border-cyan-500 block w-full p-2.5 transition-colors">
@@ -304,3 +320,5 @@
     <script src="js/admin.js"></script>
 </body>
 </html>
+
+

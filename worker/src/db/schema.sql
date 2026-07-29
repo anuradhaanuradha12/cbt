@@ -9,13 +9,15 @@ CREATE TABLE IF NOT EXISTS users (
   id           TEXT PRIMARY KEY,
   email        TEXT UNIQUE NOT NULL,
   password_hash TEXT NOT NULL,          -- format: "salt_hex:pbkdf2_hash_hex"
-  role         TEXT NOT NULL CHECK(role IN ('admin','faculty','student')),
+  role         TEXT NOT NULL CHECK(role IN ('admin','faculty','student','content-creator')),
   name         TEXT NOT NULL,
   subject      TEXT,                    -- For Faculty SMEs (e.g., physics, chemistry)
   batch_name   TEXT,                    -- For students to filter exams
+  college_id   TEXT NOT NULL DEFAULT 'global',
   is_active    INTEGER NOT NULL DEFAULT 1,
   created_at   INTEGER NOT NULL DEFAULT (unixepoch())
 );
+CREATE INDEX IF NOT EXISTS idx_users_college ON users(college_id);
 
 -- ─── Questions ──────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS questions (
@@ -59,10 +61,12 @@ CREATE TABLE IF NOT EXISTS exams (
   subject_quotas  TEXT,               -- JSON specifying quotas e.g. {"physics":30}
   starts_at      INTEGER,             -- unix timestamp
   ends_at        INTEGER,             -- starts_at + duration_minutes * 60
+  college_id     TEXT NOT NULL DEFAULT 'global',
   created_by     TEXT REFERENCES users(id),
   created_at     INTEGER NOT NULL DEFAULT (unixepoch())
 );
 CREATE INDEX IF NOT EXISTS idx_exams_status ON exams(status);
+CREATE INDEX IF NOT EXISTS idx_exams_college ON exams(college_id);
 
 -- ─── Exam Questions ──────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS exam_questions (
@@ -86,12 +90,14 @@ CREATE TABLE IF NOT EXISTS exam_attempts (
   last_seen_at INTEGER NOT NULL DEFAULT (unixepoch()),
   ip_address   TEXT,
   user_agent   TEXT,
+  college_id   TEXT NOT NULL DEFAULT 'global',
   status       TEXT NOT NULL DEFAULT 'in_progress'
                  CHECK(status IN ('in_progress','submitted','abandoned','timed_out')),
   UNIQUE(exam_id, student_id)
 );
 CREATE INDEX IF NOT EXISTS idx_attempts_exam   ON exam_attempts(exam_id, status);
 CREATE INDEX IF NOT EXISTS idx_attempts_student ON exam_attempts(student_id);
+CREATE INDEX IF NOT EXISTS idx_attempts_college ON exam_attempts(college_id);
 
 -- ─── Exam Events (Anti-Cheat Log) ────────────────────────────
 -- Passive logging only. No automatic penalty. Faculty reviews.
@@ -117,11 +123,13 @@ CREATE TABLE IF NOT EXISTS submissions (
   total_correct       INTEGER,
   total_wrong         INTEGER,
   total_unattempted   INTEGER,
+  college_id          TEXT NOT NULL DEFAULT 'global',
   submitted_at        INTEGER NOT NULL DEFAULT (unixepoch()),
   time_taken_seconds  INTEGER,
   UNIQUE(exam_id, student_id)
 );
 CREATE INDEX IF NOT EXISTS idx_submissions_exam ON submissions(exam_id);
+CREATE INDEX IF NOT EXISTS idx_submissions_college ON submissions(college_id);
 
 -- ─── Submission Answers (normalized) ─────────────────────────
 -- Primary source of truth for answers. One row per question per submission.

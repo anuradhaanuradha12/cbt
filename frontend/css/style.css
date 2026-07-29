@@ -1,8 +1,8 @@
 :root {
-    /* Brand Colors */
-    --primary: #3b82f6;
-    --primary-hover: #2563eb;
-    --primary-light: #eff6ff;
+    /* StepVista Light Mode (Zinc / Emerald) */
+    --primary: #10b981;
+    --primary-hover: #059669;
+    --primary-light: #ecfdf5;
     
     /* Semantic Colors */
     --success: #10b981;
@@ -10,31 +10,53 @@
     --warning: #f59e0b;
     
     /* Backgrounds */
-    --bg-main: #0f172a;
-    --bg-card: #1e293b;
-    --bg-input: #0f172a;
+    --bg-main: #fafafa;
+    --bg-card: #ffffff;
+    --bg-input: #f4f4f5;
     
     /* Typography */
-    --text-primary: #f8fafc;
-    --text-secondary: #94a3b8;
-    --text-muted: #64748b;
+    --text-primary: #18181b;
+    --text-secondary: #52525b;
+    --text-muted: #a1a1aa;
     
     /* Borders */
-    --border: #334155;
-    --border-focus: #3b82f6;
+    --border: #e4e4e7;
+    --border-focus: #10b981;
     
     /* Radii & Shadows */
     --radius-sm: 6px;
     --radius-md: 12px;
     --radius-lg: 20px;
-    --shadow-card: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+    --shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        /* StepVista Dark Mode */
+        --primary: #10b981;
+        --primary-hover: #059669;
+        --primary-light: #064e3b;
+        
+        --bg-main: #09090b;
+        --bg-card: #18181b;
+        --bg-input: #09090b;
+        
+        --text-primary: #fafafa;
+        --text-secondary: #a1a1aa;
+        --text-muted: #52525b;
+        
+        --border: #27272a;
+        --border-focus: #10b981;
+        
+        --shadow-card: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+    }
 }
 
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-family: 'Gabarito', 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
 body {

@@ -1,12 +1,13 @@
 // ─── Auth ───────────────────────────────────────────────────────────────────
 
-export type Role = 'admin' | 'faculty' | 'student';
+export type Role = 'admin' | 'faculty' | 'student' | 'content-creator';
 
 export interface JWTPayload {
   sub: string;        // user id
   email: string;
   role: Role;
   name: string;
+  college_id: string; // multi-tenant isolation
   subject?: Subject;  // for faculty only
   sid: string;        // session id (stored in KV for single-session enforcement)
   iat: number;

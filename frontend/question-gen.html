@@ -1,0 +1,1646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>QForge — AI Question Generation Portal</title>
+  <meta name="description" content="AI-powered question generation portal for creating and reviewing JEE/NEET/KCET questions with a two-level approval pipeline." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <script>
+    MathJax = {
+      tex: { inlineMath: [['$','$'],['\\(','\\)']], displayMath: [['$$','$$'],['\\[','\\]']], processEscapes: true },
+      options: { skipHtmlTags: ['script','noscript','style','textarea'] }
+    };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" async></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+      --bg:        #09090b;
+      --surface:   #18181b;
+      --border:    #27272a;
+      --text:      #fafafa;
+      --text-dim:  #a1a1aa;
+      --accent:    #10b981;
+      --accent-hover: #059669;
+      --danger:    #ef4444;
+      --success:   #10b981;
+      --warning:   #f59e0b;
+      --font-family: 'Gabarito', sans-serif;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Header ─────────────────────────────────────────────── */
+    header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 0 24px;
+      height: 56px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+      z-index: 10;
+    }
+
+    .header-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--text);
+      text-decoration: none;
+    }
+
+    .header-logo-icon {
+      width: 30px;
+      height: 30px;
+      background: linear-gradient(135deg, var(--accent), #a855f7);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
+    }
+
+    .header-spacer { flex: 1; }
+
+    .stat-pill {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      cursor: default;
+    }
+    .stat-pill span { color: var(--text); }
+
+    #btn-logout {
+      padding: 6px 14px;
+      border-radius: 8px;
+      border: 1px solid var(--border2);
+      background: transparent;
+      color: var(--muted);
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    #btn-logout:hover { background: var(--red-bg); color: var(--red); border-color: var(--red); }
+
+    /* ── Three-panel layout ─────────────────────────────────── */
+    .workspace {
+      display: grid;
+      grid-template-columns: 280px 1fr 420px;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .panel {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      border-right: 1px solid var(--border);
+    }
+    .panel:last-child { border-right: none; }
+
+    .panel-header {
+      padding: 14px 18px 12px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .panel-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      color: var(--muted);
+    }
+    .panel-subtitle {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+    .panel-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+    }
+    .panel-body::-webkit-scrollbar { width: 4px; }
+    .panel-body::-webkit-scrollbar-track { background: transparent; }
+    .panel-body::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
+
+    /* ── Left Panel: Generation ─────────────────────────────── */
+    .form-group { margin-bottom: 14px; }
+    .form-label {
+      display: block;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 6px;
+    }
+
+    .form-input, .form-select, .form-textarea {
+      width: 100%;
+      padding: 9px 12px;
+      background: var(--surface2);
+      border: 1px solid var(--border2);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      font-size: 13px;
+      font-family: 'Inter', sans-serif;
+      transition: border-color 0.15s, box-shadow 0.15s;
+      outline: none;
+    }
+    .form-input:focus, .form-select:focus, .form-textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(99,102,241,0.15);
+    }
+    .form-select { cursor: pointer; }
+    .form-select option { background: var(--surface3); }
+
+    /* Count stepper */
+    .count-stepper {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .count-btn {
+      width: 30px;
+      height: 30px;
+      border-radius: 6px;
+      border: 1px solid var(--border2);
+      background: var(--surface2);
+      color: var(--text);
+      font-size: 18px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+      line-height: 1;
+    }
+    .count-btn:hover { background: var(--accent); border-color: var(--accent); }
+    .count-val {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text);
+      min-width: 24px;
+      text-align: center;
+    }
+
+    /* Generate button */
+    #btn-generate {
+      width: 100%;
+      padding: 12px;
+      border-radius: var(--radius-sm);
+      border: none;
+      background: linear-gradient(135deg, var(--accent), #a855f7);
+      color: #fff;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: opacity 0.2s, transform 0.1s;
+      margin-top: 4px;
+    }
+    #btn-generate:hover { opacity: 0.9; transform: translateY(-1px); }
+    #btn-generate:active { transform: translateY(0); }
+    #btn-generate:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    .divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 18px 0;
+    }
+
+    .session-stats {
+      background: var(--surface2);
+      border-radius: var(--radius-sm);
+      padding: 12px;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+      text-align: center;
+    }
+    .stat-val { font-size: 22px; font-weight: 700; color: var(--text); }
+    .stat-lbl { font-size: 10px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.6px; margin-top: 2px; }
+    .stat-gen  .stat-val { color: var(--accent2); }
+    .stat-save .stat-val { color: var(--green); }
+    .stat-disc .stat-val { color: var(--red); }
+
+    /* View toggle */
+    .view-toggle {
+      display: flex;
+      gap: 4px;
+      background: var(--surface2);
+      padding: 4px;
+      border-radius: var(--radius-sm);
+      margin-bottom: 14px;
+    }
+    .toggle-btn {
+      flex: 1;
+      padding: 6px 8px;
+      border-radius: 6px;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .toggle-btn.active { background: var(--accent); color: #fff; }
+
+    /* ── Middle Panel: Queue ─────────────────────────────────── */
+    .queue-filter {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+    .filter-chip {
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid var(--border2);
+      background: transparent;
+      color: var(--muted);
+      transition: all 0.15s;
+    }
+    .filter-chip.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+    .draft-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px;
+      margin-bottom: 10px;
+      cursor: pointer;
+      transition: border-color 0.15s, transform 0.1s, box-shadow 0.15s;
+      position: relative;
+      overflow: hidden;
+    }
+    .draft-card::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 3px;
+      border-radius: 3px 0 0 3px;
+    }
+    .draft-card.status-pending_ai_review::before  { background: var(--muted); }
+    .draft-card.status-ai_flagged::before          { background: var(--orange); }
+    .draft-card.status-pending_human_approval::before { background: var(--yellow); }
+    .draft-card.status-approved::before            { background: var(--green); }
+    .draft-card.status-rejected::before            { background: var(--red); }
+
+    .draft-card:hover { border-color: var(--accent); transform: translateX(2px); box-shadow: var(--shadow); }
+    .draft-card.selected { border-color: var(--accent); background: var(--surface3); }
+
+    .card-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+    .status-badge {
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .badge-pending_ai_review    { background: rgba(100,116,139,0.2); color: var(--muted); }
+    .badge-ai_flagged           { background: var(--orange-bg); color: var(--orange); }
+    .badge-pending_human_approval { background: var(--yellow-bg); color: var(--yellow); }
+    .badge-approved             { background: var(--green-bg); color: var(--green); }
+    .badge-rejected             { background: var(--red-bg); color: var(--red); }
+    .badge-draft                { background: var(--blue-bg); color: var(--blue); }
+
+    .card-score {
+      margin-left: auto;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .score-good  { color: var(--green); }
+    .score-warn  { color: var(--yellow); }
+    .score-bad   { color: var(--red); }
+
+    .card-text {
+      font-size: 12.5px;
+      color: var(--text);
+      line-height: 1.5;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .card-meta {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+    .card-tag {
+      font-size: 10px;
+      color: var(--muted);
+      background: var(--surface3);
+      padding: 2px 7px;
+      border-radius: 4px;
+    }
+    .card-actions {
+      display: flex;
+      gap: 6px;
+      margin-top: 10px;
+    }
+    .card-btn {
+      flex: 1;
+      padding: 5px 8px;
+      border-radius: 6px;
+      border: 1px solid var(--border2);
+      background: transparent;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .card-btn:hover { background: var(--surface3); color: var(--text); }
+    .card-btn.btn-ai  { border-color: var(--accent); color: var(--accent2); }
+    .card-btn.btn-ai:hover  { background: rgba(99,102,241,0.15); }
+    .card-btn.btn-approve { border-color: var(--green); color: var(--green); }
+    .card-btn.btn-approve:hover { background: var(--green-bg); }
+    .card-btn.btn-reject  { border-color: var(--red); color: var(--red); }
+    .card-btn.btn-reject:hover { background: var(--red-bg); }
+
+    /* Skeleton */
+    .skeleton-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px;
+      margin-bottom: 10px;
+    }
+    .skeleton-line {
+      height: 12px;
+      border-radius: 6px;
+      background: linear-gradient(90deg, var(--surface3) 25%, var(--surface2) 50%, var(--surface3) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.4s infinite;
+      margin-bottom: 8px;
+    }
+    @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--muted);
+    }
+    .empty-icon { font-size: 40px; margin-bottom: 12px; opacity: 0.5; }
+    .empty-text { font-size: 13px; }
+
+    /* ── Right Panel: Editor ─────────────────────────────────── */
+    .editor-placeholder {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: var(--muted);
+      gap: 12px;
+      padding: 20px;
+      text-align: center;
+    }
+    .editor-placeholder-icon { font-size: 48px; opacity: 0.3; }
+    .editor-placeholder-text { font-size: 13px; max-width: 280px; line-height: 1.6; }
+
+    .editor-form { display: none; flex-direction: column; gap: 0; height: 100%; }
+    .editor-form.visible { display: flex; }
+
+    .editor-scroll { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+    .editor-scroll::-webkit-scrollbar { width: 4px; }
+    .editor-scroll::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
+
+    .editor-footer {
+      border-top: 1px solid var(--border);
+      padding: 12px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+    .editor-footer-row { display: flex; gap: 8px; }
+
+    /* Difficulty selector */
+    .difficulty-selector {
+      display: flex;
+      gap: 6px;
+    }
+    .diff-btn {
+      flex: 1;
+      padding: 7px 4px;
+      border-radius: 8px;
+      border: 1px solid var(--border2);
+      background: transparent;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      color: var(--muted);
+    }
+    .diff-btn.active-easy   { background: var(--green-bg);   border-color: var(--green);  color: var(--green);  }
+    .diff-btn.active-medium { background: var(--yellow-bg);  border-color: var(--yellow); color: var(--yellow); }
+    .diff-btn.active-hard   { background: var(--red-bg);     border-color: var(--red);    color: var(--red);    }
+
+    /* Options grid */
+    .options-grid { display: flex; flex-direction: column; gap: 6px; }
+    .option-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .option-label-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      border: 1px solid var(--border2);
+      background: var(--surface2);
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: all 0.15s;
+    }
+    .option-label-btn.correct {
+      background: var(--green);
+      border-color: var(--green);
+      color: #fff;
+    }
+    .option-row input { flex: 1; }
+
+    /* Image upload */
+    .img-upload-zone {
+      border: 1.5px dashed var(--border2);
+      border-radius: var(--radius-sm);
+      padding: 12px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.15s;
+      position: relative;
+      overflow: hidden;
+    }
+    .img-upload-zone:hover { border-color: var(--accent); background: rgba(99,102,241,0.05); }
+    .img-upload-zone input[type=file] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+    }
+    .img-upload-text { font-size: 11px; color: var(--muted); pointer-events: none; }
+    .img-preview {
+      max-width: 100%;
+      max-height: 120px;
+      border-radius: 6px;
+      margin-top: 8px;
+      object-fit: contain;
+    }
+
+    /* AI Feedback box */
+    .ai-feedback-box {
+      background: var(--orange-bg);
+      border: 1px solid rgba(251,146,60,0.3);
+      border-radius: var(--radius-sm);
+      padding: 12px;
+      margin-bottom: 4px;
+    }
+    .ai-feedback-title {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--orange);
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .ai-score-bar {
+      height: 6px;
+      border-radius: 3px;
+      background: var(--surface3);
+      margin-bottom: 8px;
+      overflow: hidden;
+    }
+    .ai-score-fill {
+      height: 100%;
+      border-radius: 3px;
+      transition: width 0.4s ease;
+    }
+    .ai-feedback-list { font-size: 12px; color: var(--text); padding-left: 16px; }
+    .ai-feedback-list li { margin-bottom: 4px; line-height: 1.5; }
+
+    .ai-pass-box {
+      background: var(--green-bg);
+      border: 1px solid rgba(34,197,94,0.3);
+      border-radius: var(--radius-sm);
+      padding: 12px;
+      margin-bottom: 4px;
+    }
+    .ai-pass-title { font-size: 11px; font-weight: 700; color: var(--green); text-transform: uppercase; letter-spacing: 0.6px; }
+
+    /* Action buttons */
+    .btn {
+      padding: 9px 14px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border2);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.15s;
+      font-family: 'Inter', sans-serif;
+    }
+    .btn-primary   { background: var(--accent);   border-color: var(--accent);  color: #fff; }
+    .btn-primary:hover { opacity: 0.85; }
+    .btn-success   { background: var(--green-bg);  border-color: var(--green);   color: var(--green); }
+    .btn-success:hover { background: var(--green); color: #fff; }
+    .btn-danger    { background: var(--red-bg);    border-color: var(--red);     color: var(--red); }
+    .btn-danger:hover  { background: var(--red);   color: #fff; }
+    .btn-secondary { background: transparent;      border-color: var(--border2); color: var(--muted); }
+    .btn-secondary:hover { background: var(--surface3); color: var(--text); }
+    .btn-ai { background: rgba(99,102,241,0.12); border-color: var(--accent); color: var(--accent2); }
+    .btn-ai:hover { background: var(--accent); color: #fff; }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* Toast */
+    #toast-container {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      z-index: 1000;
+    }
+    .toast {
+      padding: 10px 16px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 500;
+      background: var(--surface3);
+      border: 1px solid var(--border2);
+      color: var(--text);
+      box-shadow: var(--shadow);
+      animation: toast-in 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 260px;
+    }
+    .toast-success { border-color: var(--green);  background: var(--green-bg);  }
+    .toast-error   { border-color: var(--red);    background: var(--red-bg);    }
+    .toast-info    { border-color: var(--accent);  background: rgba(99,102,241,0.12); }
+    @keyframes toast-in { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+
+    /* Login overlay */
+    #login-overlay {
+      position: fixed;
+      inset: 0;
+      background: var(--bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 999;
+    }
+    .login-card {
+      background: var(--surface);
+      border: 1px solid var(--border2);
+      border-radius: 18px;
+      padding: 40px 36px;
+      width: 380px;
+      box-shadow: 0 24px 64px rgba(0,0,0,0.5);
+    }
+    .login-logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+    .login-logo-icon {
+      width: 44px;
+      height: 44px;
+      background: linear-gradient(135deg, var(--accent), #a855f7);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+    }
+    .login-logo-text { font-size: 20px; font-weight: 700; }
+    .login-logo-sub { font-size: 12px; color: var(--muted); margin-top: 1px; }
+    .login-title { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+    .login-sub { font-size: 13px; color: var(--muted); margin-bottom: 28px; }
+    .login-error {
+      background: var(--red-bg); border: 1px solid var(--red); border-radius: 8px;
+      padding: 10px 14px; font-size: 13px; color: var(--red); margin-bottom: 16px;
+      display: none;
+    }
+    #btn-login {
+      width: 100%;
+      padding: 12px;
+      border-radius: var(--radius-sm);
+      border: none;
+      background: linear-gradient(135deg, var(--accent), #a855f7);
+      color: #fff;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 8px;
+      transition: opacity 0.2s;
+    }
+    #btn-login:hover { opacity: 0.9; }
+
+    /* Role badge */
+    .role-pill {
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .role-admin   { background: rgba(168,85,247,0.15); color: #c084fc; border: 1px solid rgba(168,85,247,0.3); }
+    .role-content { background: var(--blue-bg); color: var(--blue); border: 1px solid rgba(56,189,248,0.3); }
+    .role-faculty { background: var(--green-bg); color: var(--green); border: 1px solid rgba(34,197,94,0.3); }
+
+    /* Scrollable approved panel */
+    .approved-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--green);
+      border-radius: var(--radius);
+      padding: 12px 14px;
+      margin-bottom: 10px;
+    }
+
+    /* Textarea auto-grow feel */
+    textarea.form-textarea { resize: vertical; min-height: 70px; }
+
+    /* Responsive hide panel 1 on small */
+    @media (max-width: 900px) {
+      .workspace { grid-template-columns: 1fr 1fr; }
+      .panel:first-child { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Login Overlay -->
+<div id="login-overlay">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="login-logo-icon">⚡</div>
+      <div>
+        <div class="login-logo-text">QForge</div>
+        <div class="login-logo-sub">AI Generation Portal</div>
+      </div>
+    </div>
+    <div class="login-title">Welcome back</div>
+    <div class="login-sub">Sign in with your intern or admin credentials.</div>
+    <div class="login-error" id="login-error"></div>
+    <div class="form-group">
+      <label class="form-label">Email</label>
+      <input id="login-email" class="form-input" type="email" placeholder="intern@ngi.edu" autocomplete="email" />
+    </div>
+    <div class="form-group">
+      <label class="form-label">Password</label>
+      <input id="login-password" class="form-input" type="password" placeholder="••••••••" autocomplete="current-password" />
+    </div>
+    <button id="btn-login">Sign In →</button>
+  </div>
+</div>
+
+<!-- Header -->
+<header>
+  <a class="header-logo" href="#">
+    <div class="header-logo-icon">⚡</div>
+    QForge
+  </a>
+  <div class="stat-pill" id="header-role-pill"></div>
+  <div class="header-spacer"></div>
+  <div class="stat-pill">Generated <span id="hdr-gen">0</span></div>
+  <div class="stat-pill">Saved <span id="hdr-save">0</span></div>
+  <div class="stat-pill">Discarded <span id="hdr-disc">0</span></div>
+  <button id="btn-logout">Sign Out</button>
+</header>
+
+<!-- Workspace -->
+<div class="workspace">
+
+  <!-- ── Panel 1: Generation ───────────────────────────────── -->
+  <div class="panel" id="panel-generate">
+    <div class="panel-header">
+      <div class="panel-title">✨ Generate</div>
+      <div class="panel-subtitle">AI-assisted question creation</div>
+    </div>
+    <div class="panel-body">
+      <div class="form-group">
+        <label class="form-label">Subject</label>
+        <select id="gen-subject" class="form-select">
+          <option value="">— Select subject —</option>
+          <option value="physics">Physics</option>
+          <option value="chemistry">Chemistry</option>
+          <option value="maths">Mathematics</option>
+          <option value="biology">Biology</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Chapter</label>
+        <input id="gen-chapter" class="form-input" placeholder="e.g. Kinematics" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Topic <span style="color:var(--muted);font-weight:400;text-transform:none">(optional)</span></label>
+        <input id="gen-topic" class="form-input" placeholder="e.g. Projectile Motion" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Exam Standard</label>
+        <select id="gen-standard" class="form-select">
+          <option value="KCET">🟢 KCET (Easy)</option>
+          <option value="JEE_MAIN" selected>🟡 JEE Main / NEET (Medium)</option>
+          <option value="JEE_ADVANCED">🔴 JEE Advanced (Hard)</option>
+          <option value="NEET">🟡 NEET</option>
+          <option value="general">⚪ General</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Difficulty</label>
+        <select id="gen-difficulty" class="form-select">
+          <option value="easy">🟢 Easy</option>
+          <option value="medium" selected>🟡 Medium</option>
+          <option value="hard">🔴 Hard</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Number of Questions</label>
+        <div class="count-stepper">
+          <button class="count-btn" id="btn-minus">−</button>
+          <div class="count-val" id="count-val">3</div>
+          <button class="count-btn" id="btn-plus">+</button>
+        </div>
+      </div>
+
+      <button id="btn-generate">
+        <span id="btn-gen-icon">✨</span>
+        <span id="btn-gen-text">Generate Questions</span>
+      </button>
+
+      <hr class="divider" />
+
+      <div class="session-stats">
+        <div class="stat-item stat-gen">
+          <div class="stat-val" id="stat-gen">0</div>
+          <div class="stat-lbl">Generated</div>
+        </div>
+        <div class="stat-item stat-save">
+          <div class="stat-val" id="stat-save">0</div>
+          <div class="stat-lbl">Saved</div>
+        </div>
+        <div class="stat-item stat-disc">
+          <div class="stat-val" id="stat-disc">0</div>
+          <div class="stat-lbl">Discarded</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Panel 2: Queue ──────────────────────────────────────── -->
+  <div class="panel">
+    <div class="panel-header">
+      <div class="panel-title">📋 Review Queue</div>
+      <div class="panel-subtitle">Click a card to open in editor</div>
+    </div>
+    <div class="panel-body">
+      <div class="view-toggle">
+        <button class="toggle-btn active" id="toggle-drafts" onclick="switchQueueTab('drafts')">My Drafts</button>
+        <button class="toggle-btn" id="toggle-approved" onclick="switchQueueTab('approved')">✅ Approved</button>
+      </div>
+
+      <div id="queue-drafts">
+        <div class="queue-filter">
+          <button class="filter-chip active" onclick="filterQueue(this,'')">All</button>
+          <button class="filter-chip" onclick="filterQueue(this,'pending_ai_review')">Pending AI</button>
+          <button class="filter-chip" onclick="filterQueue(this,'ai_flagged')">⚠ Flagged</button>
+          <button class="filter-chip" onclick="filterQueue(this,'pending_human_approval')">Awaiting ✓</button>
+          <button class="filter-chip" onclick="filterQueue(this,'approved')">Approved</button>
+        </div>
+        <div id="draft-list"></div>
+      </div>
+
+      <div id="queue-approved" style="display:none">
+        <div id="approved-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Panel 3: Editor ─────────────────────────────────────── -->
+  <div class="panel">
+    <div class="panel-header">
+      <div class="panel-title" id="editor-panel-title">📝 Editor</div>
+      <div class="panel-subtitle" id="editor-panel-sub">Select a card or generate a question</div>
+    </div>
+
+    <div id="editor-placeholder" class="editor-placeholder">
+      <div class="editor-placeholder-icon">📝</div>
+      <div class="editor-placeholder-text">Generate questions using the left panel, or click a card from the queue to edit it here.</div>
+    </div>
+
+    <form class="editor-form" id="editor-form" onsubmit="return false;">
+      <div class="editor-scroll" id="editor-scroll">
+
+        <!-- AI Feedback -->
+        <div id="ai-feedback-container" style="display:none"></div>
+
+        <!-- Question Text -->
+        <div class="form-group">
+          <label class="form-label">Question Text</label>
+          <textarea id="ed-question" class="form-textarea" rows="4" placeholder="Enter question text. Use $...$ for inline LaTeX and $$...$$ for display math."></textarea>
+        </div>
+
+        <!-- Question Image Upload -->
+        <div class="form-group">
+          <label class="form-label">Question Image <span style="color:var(--muted);font-weight:400;text-transform:none">(optional)</span></label>
+          <div class="img-upload-zone" id="zone-question-img" onclick="document.getElementById('file-question-img').click()">
+            <input type="file" id="file-question-img" accept="image/*" onchange="handleImageUpload('question', this)" style="display:none" />
+            <div class="img-upload-text" id="label-question-img">📎 Click to attach image (PNG/JPG/WebP, max 5MB)</div>
+            <img id="preview-question-img" class="img-preview" style="display:none" />
+          </div>
+        </div>
+
+        <!-- Options -->
+        <div class="form-group">
+          <label class="form-label">Options <span style="color:var(--muted);font-weight:400;text-transform:none">(click letter to mark correct)</span></label>
+          <div class="options-grid">
+            <div class="option-row">
+              <button type="button" class="option-label-btn" id="opt-lbl-A" onclick="setCorrect('A')">A</button>
+              <input id="ed-opt-a" class="form-input" placeholder="Option A" />
+            </div>
+            <div class="option-row">
+              <button type="button" class="option-label-btn" id="opt-lbl-B" onclick="setCorrect('B')">B</button>
+              <input id="ed-opt-b" class="form-input" placeholder="Option B" />
+            </div>
+            <div class="option-row">
+              <button type="button" class="option-label-btn" id="opt-lbl-C" onclick="setCorrect('C')">C</button>
+              <input id="ed-opt-c" class="form-input" placeholder="Option C" />
+            </div>
+            <div class="option-row">
+              <button type="button" class="option-label-btn" id="opt-lbl-D" onclick="setCorrect('D')">D</button>
+              <input id="ed-opt-d" class="form-input" placeholder="Option D" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Option Image Upload -->
+        <div class="form-group">
+          <label class="form-label">Option Image <span style="color:var(--muted);font-weight:400;text-transform:none">(optional — e.g. circuit diagram)</span></label>
+          <div class="img-upload-zone" id="zone-option-img" onclick="document.getElementById('file-option-img').click()">
+            <input type="file" id="file-option-img" accept="image/*" onchange="handleImageUpload('option', this)" style="display:none" />
+            <div class="img-upload-text" id="label-option-img">📎 Click to attach option image</div>
+            <img id="preview-option-img" class="img-preview" style="display:none" />
+          </div>
+        </div>
+
+        <!-- Explanation -->
+        <div class="form-group">
+          <label class="form-label">Explanation / Step-by-step Solution</label>
+          <textarea id="ed-explanation" class="form-textarea" rows="5" placeholder="Provide complete step-by-step working. LaTeX supported."></textarea>
+        </div>
+
+        <!-- Explanation Image Upload -->
+        <div class="form-group">
+          <label class="form-label">Explanation Image <span style="color:var(--muted);font-weight:400;text-transform:none">(optional)</span></label>
+          <div class="img-upload-zone" id="zone-explanation-img" onclick="document.getElementById('file-explanation-img').click()">
+            <input type="file" id="file-explanation-img" accept="image/*" onchange="handleImageUpload('explanation', this)" style="display:none" />
+            <div class="img-upload-text" id="label-explanation-img">📎 Click to attach explanation image / diagram</div>
+            <img id="preview-explanation-img" class="img-preview" style="display:none" />
+          </div>
+        </div>
+
+        <!-- Metadata -->
+        <div class="form-group">
+          <label class="form-label">Subject</label>
+          <select id="ed-subject" class="form-select">
+            <option value="physics">Physics</option>
+            <option value="chemistry">Chemistry</option>
+            <option value="maths">Mathematics</option>
+            <option value="biology">Biology</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Chapter</label>
+          <input id="ed-chapter" class="form-input" placeholder="Chapter name" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Exam Standard</label>
+          <select id="ed-standard" class="form-select">
+            <option value="KCET">KCET</option>
+            <option value="JEE_MAIN">JEE Main</option>
+            <option value="JEE_ADVANCED">JEE Advanced</option>
+            <option value="NEET">NEET</option>
+            <option value="general">General</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Difficulty</label>
+          <div class="difficulty-selector">
+            <button type="button" class="diff-btn" id="diff-easy"   onclick="setDifficulty('easy')">🟢 Easy</button>
+            <button type="button" class="diff-btn" id="diff-medium" onclick="setDifficulty('medium')">🟡 Medium</button>
+            <button type="button" class="diff-btn" id="diff-hard"   onclick="setDifficulty('hard')">🔴 Hard</button>
+          </div>
+        </div>
+
+      </div><!-- /editor-scroll -->
+
+      <div class="editor-footer">
+        <div class="editor-footer-row">
+          <button type="button" class="btn btn-secondary" style="flex:0 0 auto" id="btn-discard" onclick="discardDraft()">🗑️</button>
+          <button type="button" class="btn btn-primary" style="flex:1" id="btn-save-draft" onclick="saveDraft()">💾 Save Draft</button>
+          <button type="button" class="btn btn-ai" style="flex:1" id="btn-ai-review" onclick="triggerAiReview()" style="display:none">🤖 AI Review</button>
+        </div>
+        <button type="button" class="btn btn-success" id="btn-approve" onclick="approveDraft()" style="display:none">✅ Approve Question</button>
+        <button type="button" class="btn btn-danger"  id="btn-reject"  onclick="rejectDraft()"  style="display:none">✗ Reject</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<script>
+// ── Config ─────────────────────────────────────────────────────────────────
+const API = (() => {
+  const h = window.location.hostname;
+  if (h === 'localhost' || h === '127.0.0.1') return 'http://127.0.0.1:8787';
+  return 'https://cbt-worker.shishira-932.workers.dev';
+})();
+
+// ── State ──────────────────────────────────────────────────────────────────
+let token   = localStorage.getItem('qforge_token') || '';
+let user    = JSON.parse(localStorage.getItem('qforge_user') || 'null');
+let count   = 3;
+let activeDraftId = null;
+let correctAnswer = 'A';
+let difficulty    = 'medium';
+let imageKeys = { question: null, option: null, explanation: null };
+let currentFilter = '';
+let statsGen = 0, statsSave = 0, statsDisc = 0;
+let queueTab = 'drafts';
+
+// ── Auth ───────────────────────────────────────────────────────────────────
+async function login() {
+  const email    = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  const errEl    = document.getElementById('login-error');
+  errEl.style.display = 'none';
+
+  const res = await apiFetch('/auth/login', { method: 'POST', body: { email, password } }, false);
+  if (!res.ok) {
+    const d = await res.json().catch(()=>({}));
+    errEl.textContent = d.error || 'Login failed';
+    errEl.style.display = 'block';
+    return;
+  }
+  const data = await res.json();
+  if (!['admin','content-creator','faculty'].includes(data.user.role)) {
+    errEl.textContent = 'Access denied. This portal is for content creators and admins only.';
+    errEl.style.display = 'block';
+    return;
+  }
+  token = data.token;
+  user  = data.user;
+  localStorage.setItem('qforge_token', token);
+  localStorage.setItem('qforge_user', JSON.stringify(user));
+  initApp();
+}
+
+function logout() {
+  token = ''; user = null;
+  localStorage.removeItem('qforge_token');
+  localStorage.removeItem('qforge_user');
+  document.getElementById('login-overlay').style.display = 'flex';
+}
+
+// ── API Helper ─────────────────────────────────────────────────────────────
+async function apiFetch(path, opts = {}, withAuth = true) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (withAuth && token) headers['Authorization'] = `Bearer ${token}`;
+  return fetch(API + path, {
+    method: opts.method || 'GET',
+    headers,
+    body: opts.body ? JSON.stringify(opts.body) : undefined,
+  });
+}
+
+// ── Init ───────────────────────────────────────────────────────────────────
+function initApp() {
+  document.getElementById('login-overlay').style.display = 'none';
+
+  const rolePill = document.getElementById('header-role-pill');
+  const cls = user.role === 'admin' ? 'role-admin' : user.role === 'faculty' ? 'role-faculty' : 'role-content';
+  rolePill.innerHTML = `<span class="role-pill ${cls}">${user.role}</span>&nbsp;${user.name}`;
+
+  // Hide approve/reject for non-admins
+  if (user.role !== 'admin') {
+    document.getElementById('btn-approve').style.display = 'none';
+    document.getElementById('btn-reject').style.display  = 'none';
+  }
+
+  loadDrafts();
+}
+
+window.addEventListener('load', () => {
+  if (token && user) initApp();
+});
+
+// ── Login handlers ─────────────────────────────────────────────────────────
+document.getElementById('btn-login').addEventListener('click', login);
+document.getElementById('login-password').addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
+document.getElementById('btn-logout').addEventListener('click', logout);
+
+// ── Count stepper ──────────────────────────────────────────────────────────
+document.getElementById('btn-minus').addEventListener('click', () => {
+  if (count > 1) { count--; document.getElementById('count-val').textContent = count; }
+});
+document.getElementById('btn-plus').addEventListener('click', () => {
+  if (count < 5) { count++; document.getElementById('count-val').textContent = count; }
+});
+
+// ── Stats ──────────────────────────────────────────────────────────────────
+function updateStats(gen=0, save=0, disc=0) {
+  statsGen += gen; statsSave += save; statsDisc += disc;
+  document.getElementById('stat-gen').textContent  = statsGen;
+  document.getElementById('stat-save').textContent = statsSave;
+  document.getElementById('stat-disc').textContent = statsDisc;
+  document.getElementById('hdr-gen').textContent   = statsGen;
+  document.getElementById('hdr-save').textContent  = statsSave;
+  document.getElementById('hdr-disc').textContent  = statsDisc;
+}
+
+// ── Queue tab switch ───────────────────────────────────────────────────────
+function switchQueueTab(tab) {
+  queueTab = tab;
+  document.getElementById('toggle-drafts').classList.toggle('active',   tab === 'drafts');
+  document.getElementById('toggle-approved').classList.toggle('active', tab === 'approved');
+  document.getElementById('queue-drafts').style.display   = tab === 'drafts'   ? '' : 'none';
+  document.getElementById('queue-approved').style.display = tab === 'approved' ? '' : 'none';
+  if (tab === 'approved') loadApproved();
+}
+
+// ── Filter ─────────────────────────────────────────────────────────────────
+function filterQueue(btn, status) {
+  document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  currentFilter = status;
+  loadDrafts();
+}
+
+// ── Load Drafts ────────────────────────────────────────────────────────────
+async function loadDrafts() {
+  const listEl = document.getElementById('draft-list');
+  listEl.innerHTML = renderSkeletons(3);
+  const qs  = currentFilter ? `?status=${currentFilter}&limit=50` : '?limit=50';
+  const res = await apiFetch(`/forge/drafts${qs}`);
+  if (!res.ok) { listEl.innerHTML = '<div class="empty-state"><div class="empty-icon">⚠️</div><div class="empty-text">Failed to load drafts</div></div>'; return; }
+  const data = await res.json();
+
+  if (!data.data.length) {
+    listEl.innerHTML = '<div class="empty-state"><div class="empty-icon">📭</div><div class="empty-text">No drafts yet. Generate some questions!</div></div>';
+    return;
+  }
+  listEl.innerHTML = data.data.map(renderDraftCard).join('');
+  if (typeof MathJax !== 'undefined') MathJax.typesetPromise?.([listEl]);
+}
+
+function renderSkeletons(n) {
+  return Array(n).fill(0).map(() => `
+    <div class="skeleton-card">
+      <div class="skeleton-line" style="width:60%;height:10px"></div>
+      <div class="skeleton-line" style="width:100%;margin-top:10px"></div>
+      <div class="skeleton-line" style="width:80%"></div>
+    </div>`).join('');
+}
+
+function renderDraftCard(d) {
+  const score = d.ai_score != null ? parseFloat(d.ai_score) : null;
+  const scoreCls = score == null ? '' : score >= 0.75 ? 'score-good' : score >= 0.5 ? 'score-warn' : 'score-bad';
+  const scoreHtml = score != null ? `<span class="card-score ${scoreCls}">${(score*100).toFixed(0)}%</span>` : '';
+  const diffEmoji = {easy:'🟢',medium:'🟡',hard:'🔴'}[d.difficulty] || '';
+  const isAdmin = user?.role === 'admin';
+
+  const actionBtns = () => {
+    if (d.status === 'pending_ai_review' || d.status === 'ai_flagged') {
+      return `<button class="card-btn btn-ai" onclick="event.stopPropagation();quickAiReview('${d.id}')">🤖 AI Review</button>
+              <button class="card-btn btn-reject" onclick="event.stopPropagation();quickDiscard('${d.id}')">Discard</button>`;
+    }
+    if (d.status === 'pending_human_approval' && isAdmin) {
+      return `<button class="card-btn btn-approve" onclick="event.stopPropagation();quickApprove('${d.id}')">✅ Approve</button>
+              <button class="card-btn btn-reject" onclick="event.stopPropagation();quickReject('${d.id}')">✗ Reject</button>`;
+    }
+    return '';
+  };
+
+  return `
+  <div class="draft-card status-${d.status}${activeDraftId===d.id?' selected':''}" id="card-${d.id}" onclick="openDraft('${d.id}')">
+    <div class="card-header">
+      <span class="status-badge badge-${d.status}">${statusLabel(d.status)}</span>
+      ${scoreHtml}
+    </div>
+    <div class="card-text">${d.question_text?.slice(0,120) || '(no text)'}${d.question_text?.length>120?'…':''}</div>
+    <div class="card-meta">
+      <span class="card-tag">${d.subject}</span>
+      <span class="card-tag">${d.chapter}</span>
+      <span class="card-tag">${diffEmoji} ${d.difficulty}</span>
+      <span class="card-tag">${d.exam_standard}</span>
+    </div>
+    <div class="card-actions">${actionBtns()}</div>
+  </div>`;
+}
+
+function statusLabel(s) {
+  return { pending_ai_review:'Pending AI', ai_flagged:'⚠ Flagged', pending_human_approval:'Awaiting ✓', approved:'✅ Approved', rejected:'✗ Rejected' }[s] || s;
+}
+
+// ── Load Approved ──────────────────────────────────────────────────────────
+async function loadApproved() {
+  const listEl = document.getElementById('approved-list');
+  listEl.innerHTML = renderSkeletons(3);
+  const res = await apiFetch('/forge/approved?limit=50');
+  if (!res.ok) { listEl.innerHTML = '<div class="empty-state"><div class="empty-icon">⚠️</div></div>'; return; }
+  const data = await res.json();
+  if (!data.data.length) {
+    listEl.innerHTML = '<div class="empty-state"><div class="empty-icon">✅</div><div class="empty-text">No approved questions yet.</div></div>';
+    return;
+  }
+  listEl.innerHTML = data.data.map(q => `
+    <div class="approved-card">
+      <div class="card-header" style="margin-bottom:6px">
+        <span class="card-tag">${q.subject}</span>
+        <span class="card-tag">${q.chapter}</span>
+        <span class="card-tag">${q.exam_standard}</span>
+        <span class="card-tag">Score: ${q.ai_score != null ? (q.ai_score*100).toFixed(0)+'%' : 'N/A'}</span>
+      </div>
+      <div class="card-text" style="-webkit-line-clamp:3">${q.question_text?.slice(0,200)||''}</div>
+    </div>`).join('');
+  if (typeof MathJax !== 'undefined') MathJax.typesetPromise?.([listEl]);
+}
+
+// ── Generate Questions ─────────────────────────────────────────────────────
+document.getElementById('btn-generate').addEventListener('click', async () => {
+  const subject    = document.getElementById('gen-subject').value;
+  const chapter    = document.getElementById('gen-chapter').value.trim();
+  const topic      = document.getElementById('gen-topic').value.trim();
+  const standard   = document.getElementById('gen-standard').value;
+  const diff       = document.getElementById('gen-difficulty').value;
+
+  if (!subject || !chapter) { toast('Select a subject and enter a chapter first.', 'error'); return; }
+
+  const btn = document.getElementById('btn-generate');
+  btn.disabled = true;
+  document.getElementById('btn-gen-icon').textContent = '⏳';
+  document.getElementById('btn-gen-text').textContent = 'Generating…';
+
+  // Show skeletons in the queue
+  const listEl = document.getElementById('draft-list');
+  listEl.insertAdjacentHTML('afterbegin', renderSkeletons(count));
+
+  const res = await apiFetch('/forge/generate', {
+    method: 'POST',
+    body: { subject, chapter, topic, exam_standard: standard, difficulty: diff, count },
+  });
+
+  btn.disabled = false;
+  document.getElementById('btn-gen-icon').textContent = '✨';
+  document.getElementById('btn-gen-text').textContent = 'Generate Questions';
+
+  if (!res.ok) {
+    const d = await res.json().catch(()=>({}));
+    toast(d.error || 'Generation failed', 'error');
+    loadDrafts();
+    return;
+  }
+
+  const data = await res.json();
+  updateStats(data.drafts.length, 0, 0);
+  toast(`Generated ${data.drafts.length} question${data.drafts.length>1?'s':''}!`, 'success');
+
+  // Load first draft into editor immediately
+  if (data.drafts.length > 0) {
+    loadDraftIntoEditor(null, data.drafts[0], { subject, chapter, topic, exam_standard: standard, difficulty: diff });
+  }
+
+  // For remaining drafts, show them pre-populated in the queue as unsaved cards
+  // (user can click each to edit then save separately)
+  if (data.drafts.length > 1) {
+    data.drafts.slice(1).forEach(draft => {
+      const tempId = 'unsaved-' + crypto.randomUUID();
+      const card = document.createElement('div');
+      card.innerHTML = `
+        <div class="draft-card status-pending_ai_review" id="card-${tempId}" onclick="loadUnsavedDraft('${tempId}')">
+          <div class="card-header"><span class="status-badge badge-draft">Draft</span></div>
+          <div class="card-text">${draft.question_text?.slice(0,120)||''}${draft.question_text?.length>120?'…':''}</div>
+          <div class="card-meta"><span class="card-tag">${subject}</span><span class="card-tag">${chapter}</span><span class="card-tag">${diff}</span></div>
+        </div>`;
+      card.dataset.draft = JSON.stringify({ ...draft, subject, chapter, topic, exam_standard: standard, difficulty: diff });
+      card.id = `wrapper-${tempId}`;
+      listEl.insertAdjacentElement('afterbegin', card);
+      // Store for retrieval
+      window._unsavedDrafts = window._unsavedDrafts || {};
+      window._unsavedDrafts[tempId] = { ...draft, subject, chapter, topic, exam_standard: standard, difficulty: diff };
+    });
+  }
+
+  // Remove skeleton placeholders
+  listEl.querySelectorAll('.skeleton-card').forEach(el => el.remove());
+  if (typeof MathJax !== 'undefined') MathJax.typesetPromise?.([listEl]);
+});
+
+// Load unsaved (pre-generation) draft into editor
+window.loadUnsavedDraft = function(tempId) {
+  const draft = window._unsavedDrafts?.[tempId];
+  if (!draft) return;
+  loadDraftIntoEditor(null, draft, draft);
+  document.querySelectorAll('.draft-card').forEach(c => c.classList.remove('selected'));
+  document.getElementById('card-' + tempId)?.classList.add('selected');
+};
+
+// ── Open saved draft from DB ───────────────────────────────────────────────
+async function openDraft(id) {
+  document.querySelectorAll('.draft-card').forEach(c => c.classList.remove('selected'));
+  document.getElementById('card-' + id)?.classList.add('selected');
+  activeDraftId = id;
+
+  const res = await apiFetch(`/forge/drafts/${id}`);
+  if (!res.ok) { toast('Failed to load draft', 'error'); return; }
+  const draft = await res.json();
+  loadDraftIntoEditor(id, draft, draft);
+}
+
+// ── Populate Editor ─────────────────────────────────────────────────────────
+function loadDraftIntoEditor(id, draft, meta) {
+  activeDraftId = id;
+  document.getElementById('editor-placeholder').style.display = 'none';
+  const form = document.getElementById('editor-form');
+  form.classList.add('visible');
+  form.style.display = 'flex';
+
+  document.getElementById('ed-question').value    = draft.question_text || '';
+  document.getElementById('ed-opt-a').value        = draft.option_a || '';
+  document.getElementById('ed-opt-b').value        = draft.option_b || '';
+  document.getElementById('ed-opt-c').value        = draft.option_c || '';
+  document.getElementById('ed-opt-d').value        = draft.option_d || '';
+  document.getElementById('ed-explanation').value  = draft.explanation || '';
+  document.getElementById('ed-subject').value      = meta.subject || 'physics';
+  document.getElementById('ed-chapter').value      = meta.chapter || '';
+  document.getElementById('ed-standard').value     = meta.exam_standard || 'JEE_MAIN';
+
+  setCorrect(draft.correct_answer || 'A');
+  setDifficulty(meta.difficulty || 'medium');
+
+  // R2 images
+  imageKeys = {
+    question:    draft.question_image_r2_key    || null,
+    option:      draft.option_image_r2_key      || null,
+    explanation: draft.explanation_image_r2_key || null,
+  };
+  ['question','option','explanation'].forEach(async type => {
+    const key = imageKeys[type];
+    const preview = document.getElementById(`preview-${type}-img`);
+    const label   = document.getElementById(`label-${type}-img`);
+    if (key) {
+      const res = await apiFetch(`/forge/image/${key}`);
+      if (res.ok) {
+        const blob = await res.blob();
+        preview.src = URL.createObjectURL(blob);
+        preview.style.display = 'block';
+        label.textContent = '✅ Image attached (click to replace)';
+      } else {
+        label.textContent = '⚠️ Failed to load image';
+      }
+    } else {
+      preview.style.display = 'none';
+      label.textContent = type === 'question' ? '📎 Click to attach image (PNG/JPG/WebP, max 5MB)'
+                        : type === 'option'   ? '📎 Click to attach option image'
+                                              : '📎 Click to attach explanation image / diagram';
+    }
+  });
+
+  // AI Feedback
+  renderAiFeedback(draft);
+
+  // Button visibility
+  const isExistingDraft = !!id;
+  const isFlagged    = draft.status === 'ai_flagged';
+  const isReadyHuman = draft.status === 'pending_human_approval';
+  const isAdmin      = user?.role === 'admin';
+
+  document.getElementById('btn-save-draft').style.display  = 'flex';
+  document.getElementById('btn-ai-review').style.display   = (isExistingDraft) ? 'flex' : 'none';
+  document.getElementById('btn-approve').style.display     = (isAdmin && isReadyHuman) ? 'flex' : 'none';
+  document.getElementById('btn-reject').style.display      = (isAdmin && isExistingDraft && draft.status !== 'approved') ? 'flex' : 'none';
+
+  document.getElementById('editor-panel-title').textContent = id ? '📝 Editor — Saved Draft' : '📝 Editor — New Draft';
+  document.getElementById('editor-panel-sub').textContent   = id ? `ID: ${id.slice(0,8)}…` : 'Not saved yet';
+
+  // Re-render LaTeX in editor
+  const scroll = document.getElementById('editor-scroll');
+  if (typeof MathJax !== 'undefined') MathJax.typesetPromise?.([scroll]);
+}
+
+function renderAiFeedback(draft) {
+  const container = document.getElementById('ai-feedback-container');
+  if (!draft.ai_score && !draft.ai_feedback) { container.style.display = 'none'; return; }
+  container.style.display = 'block';
+
+  let feedback = {};
+  try { feedback = typeof draft.ai_feedback === 'string' ? JSON.parse(draft.ai_feedback) : (draft.ai_feedback || {}); } catch {}
+
+  const score   = parseFloat(draft.ai_score) || 0;
+  const passed  = score >= 0.75;
+  const pct     = (score * 100).toFixed(0);
+  const fillClr = passed ? '#22c55e' : score >= 0.5 ? '#f59e0b' : '#ef4444';
+
+  if (passed) {
+    container.innerHTML = `
+      <div class="ai-pass-box">
+        <div class="ai-pass-title">✅ AI Review Passed — Score: ${pct}%</div>
+        ${feedback.suggestions?.length ? `<div style="margin-top:6px;font-size:12px;color:var(--muted)">${feedback.suggestions.map(s=>`• ${s}`).join('<br>')}</div>` : ''}
+      </div>`;
+  } else {
+    const issues  = feedback.issues      || [];
+    const suggest = feedback.suggestions || [];
+    container.innerHTML = `
+      <div class="ai-feedback-box">
+        <div class="ai-feedback-title">⚠️ AI Flagged — Score: ${pct}%</div>
+        <div class="ai-score-bar"><div class="ai-score-fill" style="width:${pct}%;background:${fillClr}"></div></div>
+        ${issues.length ? `<div style="margin-bottom:6px;font-size:11px;color:var(--orange);font-weight:700">Issues:</div>
+          <ul class="ai-feedback-list">${issues.map(i=>`<li>${i}</li>`).join('')}</ul>` : ''}
+        ${suggest.length ? `<div style="margin-top:8px;font-size:11px;color:var(--muted);font-weight:700">Suggestions:</div>
+          <ul class="ai-feedback-list" style="color:var(--muted)">${suggest.map(s=>`<li>${s}</li>`).join('')}</ul>` : ''}
+      </div>`;
+  }
+}
+
+// ── Editor controls ────────────────────────────────────────────────────────
+function setCorrect(letter) {
+  correctAnswer = letter;
+  ['A','B','C','D'].forEach(l => {
+    const btn = document.getElementById(`opt-lbl-${l}`);
+    if (btn) btn.classList.toggle('correct', l === letter);
+  });
+}
+
+function setDifficulty(d) {
+  difficulty = d;
+  ['easy','medium','hard'].forEach(v => {
+    const btn = document.getElementById(`diff-${v}`);
+    if (btn) { btn.className = 'diff-btn'; if (v === d) btn.classList.add(`active-${v}`); }
+  });
+}
+
+// ── Image Upload ───────────────────────────────────────────────────────────
+async function handleImageUpload(type, input) {
+  const file = input.files[0];
+  if (!file) return;
+
+  const label   = document.getElementById(`label-${type}-img`);
+  const preview = document.getElementById(`preview-${type}-img`);
+  label.textContent = '⏳ Uploading…';
+
+  const res = await fetch(`${API}/forge/upload-image`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': file.type },
+    body: file,
+  });
+
+  if (!res.ok) {
+    const d = await res.json().catch(()=>({}));
+    toast(d.error || 'Upload failed', 'error');
+    label.textContent = '⚠️ Upload failed. Try again.';
+    return;
+  }
+
+  const data = await res.json();
+  imageKeys[type] = data.r2_key;
+  label.textContent = `✅ Uploaded: ${file.name}`;
+  preview.src = URL.createObjectURL(file);
+  preview.style.display = 'block';
+  toast(`${type} image uploaded!`, 'success');
+}
+
+// ── Save Draft ─────────────────────────────────────────────────────────────
+async function saveDraft() {
+  const body = collectEditorValues();
+  if (!body) return;
+
+  const btn = document.getElementById('btn-save-draft');
+  btn.disabled = true; btn.textContent = '⏳ Saving…';
+
+  let res;
+  if (activeDraftId && !activeDraftId.startsWith('unsaved-')) {
+    // Update existing
+    res = await apiFetch(`/forge/drafts/${activeDraftId}`, { method: 'PATCH', body });
+  } else {
+    // New submission
+    res = await apiFetch('/forge/submit', { method: 'POST', body });
+  }
+
+  btn.disabled = false; btn.textContent = '💾 Save Draft';
+
+  if (!res.ok) { const d = await res.json().catch(()=>({})); toast(d.error||'Save failed','error'); return; }
+  const data = await res.json();
+
+  if (!activeDraftId || activeDraftId.startsWith('unsaved-')) {
+    activeDraftId = data.id;
+    updateStats(0, 1, 0);
+  }
+  toast('Draft saved!', 'success');
+  loadDrafts();
+  // Show AI review button now
+  document.getElementById('btn-ai-review').style.display = 'flex';
+  document.getElementById('editor-panel-sub').textContent = `ID: ${activeDraftId?.slice(0,8)}…`;
+}
+
+function collectEditorValues() {
+  const question_text = document.getElementById('ed-question').value.trim();
+  const option_a      = document.getElementById('ed-opt-a').value.trim();
+  const option_b      = document.getElementById('ed-opt-b').value.trim();
+  const option_c      = document.getElementById('ed-opt-c').value.trim();
+  const option_d      = document.getElementById('ed-opt-d').value.trim();
+  const explanation   = document.getElementById('ed-explanation').value.trim();
+  const subject       = document.getElementById('ed-subject').value;
+  const chapter       = document.getElementById('ed-chapter').value.trim();
+  const exam_standard = document.getElementById('ed-standard').value;
+
+  if (!question_text || !option_a || !option_b || !option_c || !option_d) {
+    toast('Question text and all 4 options are required.', 'error'); return null;
+  }
+  if (!chapter) { toast('Chapter name is required.', 'error'); return null; }
+
+  return {
+    subject, chapter, difficulty, exam_standard,
+    question_text, option_a, option_b, option_c, option_d,
+    correct_answer: correctAnswer, explanation,
+    question_image_r2_key:    imageKeys.question    || undefined,
+    option_image_r2_key:      imageKeys.option      || undefined,
+    explanation_image_r2_key: imageKeys.explanation || undefined,
+  };
+}
+
+// ── AI Review ──────────────────────────────────────────────────────────────
+async function triggerAiReview() {
+  if (!activeDraftId || activeDraftId.startsWith('unsaved-')) {
+    toast('Save the draft first before running AI review.', 'error'); return;
+  }
+  const btn = document.getElementById('btn-ai-review');
+  btn.disabled = true; btn.textContent = '⏳ Reviewing…';
+
+  const res = await apiFetch(`/forge/${activeDraftId}/ai-review`, { method: 'POST' });
+  btn.disabled = false; btn.textContent = '🤖 AI Review';
+
+  if (!res.ok) { const d = await res.json().catch(()=>({})); toast(d.error||'AI review failed','error'); return; }
+  const data = await res.json();
+
+  toast(data.message || (data.passed ? 'AI review passed!' : 'AI flagged issues.'), data.passed ? 'success' : 'info');
+
+  // Reload draft to show feedback
+  const draftRes = await apiFetch(`/forge/drafts/${activeDraftId}`);
+  if (draftRes.ok) {
+    const draft = await draftRes.json();
+    renderAiFeedback(draft);
+    if (draft.status === 'pending_human_approval' && user?.role === 'admin') {
+      document.getElementById('btn-approve').style.display = 'flex';
+    }
+  }
+  loadDrafts();
+}
+
+async function quickAiReview(id) {
+  toast('Running AI review…', 'info');
+  const res = await apiFetch(`/forge/${id}/ai-review`, { method: 'POST' });
+  if (!res.ok) { toast('AI review failed', 'error'); return; }
+  const data = await res.json();
+  toast(data.passed ? '✅ AI review passed!' : '⚠️ AI flagged issues.', data.passed ? 'success' : 'info');
+  loadDrafts();
+  if (activeDraftId === id) {
+    const draftRes = await apiFetch(`/forge/drafts/${id}`);
+    if (draftRes.ok) renderAiFeedback(await draftRes.json());
+  }
+}
+
+// ── Approve / Reject ───────────────────────────────────────────────────────
+async function approveDraft() {
+  if (!activeDraftId) return;
+  const res = await apiFetch(`/forge/${activeDraftId}/approve`, { method: 'POST' });
+  if (!res.ok) { const d = await res.json().catch(()=>({})); toast(d.error||'Approval failed','error'); return; }
+  toast('✅ Question approved and added to proprietary bank!', 'success');
+  updateStats(0, 1, 0);
+  resetEditor();
+  loadDrafts();
+}
+
+async function rejectDraft() {
+  if (!activeDraftId) return;
+  const reason = prompt('Reason for rejection (optional):') ?? '';
+  const res = await apiFetch(`/forge/${activeDraftId}/reject`, { method: 'POST', body: { reason } });
+  if (!res.ok) { toast('Rejection failed', 'error'); return; }
+  toast('Draft rejected.', 'info');
+  resetEditor();
+  loadDrafts();
+}
+
+async function quickApprove(id) {
+  const res = await apiFetch(`/forge/${id}/approve`, { method: 'POST' });
+  if (!res.ok) { const d = await res.json().catch(()=>({})); toast(d.error||'Approval failed','error'); return; }
+  toast('✅ Question approved!', 'success');
+  loadDrafts();
+}
+
+async function quickReject(id) {
+  const reason = prompt('Reason (optional):') ?? '';
+  const res = await apiFetch(`/forge/${id}/reject`, { method: 'POST', body: { reason } });
+  if (!res.ok) { toast('Rejection failed', 'error'); return; }
+  toast('Draft rejected.', 'info');
+  loadDrafts();
+}
+
+// ── Discard ────────────────────────────────────────────────────────────────
+function discardDraft() {
+  if (!confirm('Discard this draft? (It will not be deleted from DB unless it was saved.)')) return;
+  updateStats(0, 0, 1);
+  resetEditor();
+}
+
+async function quickDiscard(id) {
+  if (!confirm('Mark this draft as rejected?')) return;
+  const res = await apiFetch(`/forge/${id}/reject`, { method: 'POST', body: { reason: 'Discarded by user' } });
+  if (!res.ok) { toast('Failed', 'error'); return; }
+  toast('Discarded.', 'info');
+  updateStats(0, 0, 1);
+  loadDrafts();
+}
+
+function resetEditor() {
+  activeDraftId = null;
+  imageKeys = { question: null, option: null, explanation: null };
+  document.getElementById('editor-form').classList.remove('visible');
+  document.getElementById('editor-form').style.display = 'none';
+  document.getElementById('editor-placeholder').style.display = 'flex';
+  document.querySelectorAll('.draft-card').forEach(c => c.classList.remove('selected'));
+}
+
+// ── Toast ──────────────────────────────────────────────────────────────────
+function toast(msg, type = 'info') {
+  const icons = { success: '✅', error: '❌', info: 'ℹ️' };
+  const el = document.createElement('div');
+  el.className = `toast toast-${type}`;
+  el.innerHTML = `<span>${icons[type]||''}</span> ${msg}`;
+  document.getElementById('toast-container').appendChild(el);
+  setTimeout(() => el.remove(), 4000);
+}
+</script>
+</body>
+</html>
+
+
