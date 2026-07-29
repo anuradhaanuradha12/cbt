@@ -15,4 +15,7 @@ export interface Env {
   // Secrets (set via `wrangler secret put`)
   JWT_SECRET: string;
   GEMINI_API_KEY: string;
+
+  // Static Assets fetcher
+  ASSETS?: Fetcher;
 }
