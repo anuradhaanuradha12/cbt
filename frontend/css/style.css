@@ -1,8 +1,8 @@
 :root {
-    /* StepVista Light Mode (Zinc / Emerald) */
-    --primary: #10b981;
-    --primary-hover: #059669;
-    --primary-light: #ecfdf5;
+    /* StepVista Light Mode (Indigo) */
+    --primary: #5846f6;
+    --primary-hover: #4f3ce3;
+    --primary-light: #eef2ff;
     
     /* Semantic Colors */
     --success: #10b981;
@@ -21,35 +21,13 @@
     
     /* Borders */
     --border: #e4e4e7;
-    --border-focus: #10b981;
+    --border-focus: #5846f6;
     
     /* Radii & Shadows */
     --radius-sm: 6px;
     --radius-md: 12px;
     --radius-lg: 20px;
     --shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-}
-
-@media (prefers-color-scheme: dark) {
-    :root {
-        /* StepVista Dark Mode */
-        --primary: #10b981;
-        --primary-hover: #059669;
-        --primary-light: #064e3b;
-        
-        --bg-main: #09090b;
-        --bg-card: #18181b;
-        --bg-input: #09090b;
-        
-        --text-primary: #fafafa;
-        --text-secondary: #a1a1aa;
-        --text-muted: #52525b;
-        
-        --border: #27272a;
-        --border-focus: #10b981;
-        
-        --shadow-card: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
-    }
 }
 
 * {

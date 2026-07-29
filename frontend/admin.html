@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en" >
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -67,15 +67,15 @@
     </style>
 <link href='https://fonts.googleapis.com/css2?family=Gabarito:wght@400;500;600;700&display=swap' rel='stylesheet'>
 </head>
-<body class="bg-slate-950 text-slate-200 h-screen overflow-hidden font-sans selection:bg-indigo-500/30">
+<body class="bg-white text-gray-900 h-screen overflow-hidden font-sans selection:bg-indigo-500/30">
 
     <div class="flex h-full">
         <!-- Sidebar Navigation -->
-        <aside class="w-64 glass-panel border-r border-slate-800 flex flex-col justify-between">
+        <aside class="w-64 glass-panel border-r border-gray-200 flex flex-col justify-between">
             <div>
                 <div class="p-6">
                     <h1 class="text-xl font-bold bg-gradient-to-r from-indigo-400 to-cyan-400 bg-clip-text text-transparent tracking-tight">QForge</h1>
-                    <p class="text-xs text-slate-500 mt-1 uppercase tracking-wider font-semibold">Workspace</p>
+                    <p class="text-xs text-gray-500 mt-1 uppercase tracking-wider font-semibold">Workspace</p>
                 </div>
                 
                 <nav class="px-4 space-y-1">
@@ -83,28 +83,28 @@
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
                         Exams & Questions
                     </a>
-                    <a href="#users" data-tab="users" id="navUsers" class="nav-link hidden items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 transition-colors">
+                    <a href="#users" data-tab="users" id="navUsers" class="nav-link hidden items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg text-gray-600 hover:text-gray-900 hover:bg-white/50 transition-colors">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
                         User Management
                     </a>
-                    <a href="#tasks" data-tab="tasks" id="navTasks" class="nav-link hidden items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 transition-colors">
+                    <a href="#tasks" data-tab="tasks" id="navTasks" class="nav-link hidden items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg text-gray-600 hover:text-gray-900 hover:bg-white/50 transition-colors">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
                         Pending Tasks
                     </a>
                 </nav>
             </div>
 
-            <div class="p-4 border-t border-slate-800">
-                <div class="flex items-center gap-3 px-4 py-3 rounded-lg bg-slate-900 border border-slate-800">
+            <div class="p-4 border-t border-gray-200">
+                <div class="flex items-center gap-3 px-4 py-3 rounded-lg bg-gray-50 border border-gray-200">
                     <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold text-sm shadow-inner">
                         A
                     </div>
                     <div class="flex-1 min-w-0">
-                        <p id="userName" class="text-sm font-medium text-slate-200 truncate">Loading...</p>
-                        <p id="userSubject" class="text-xs text-slate-500 truncate hidden"></p>
+                        <p id="userName" class="text-sm font-medium text-gray-900 truncate">Loading...</p>
+                        <p id="userSubject" class="text-xs text-gray-500 truncate hidden"></p>
                     </div>
                 </div>
-                <button onclick="api.logout()" class="mt-3 w-full px-4 py-2 text-sm font-medium text-slate-400 hover:text-white bg-slate-800/50 hover:bg-slate-700/50 rounded-lg transition-colors border border-slate-800">
+                <button onclick="api.logout()" class="mt-3 w-full px-4 py-2 text-sm font-medium text-gray-600 hover:text-white bg-white/50 hover:bg-slate-700/50 rounded-lg transition-colors border border-gray-200">
                     Logout
                 </button>
             </div>
@@ -119,28 +119,28 @@
                     
                     <!-- Left Pane: Question Bank -->
                     <div class="glass-panel rounded-xl flex flex-col h-full shadow-2xl overflow-hidden">
-                        <div class="px-6 py-5 border-b border-slate-800 flex justify-between items-center bg-slate-900/50">
-                            <h2 class="text-lg font-semibold text-slate-100 flex items-center gap-2">
+                        <div class="px-6 py-5 border-b border-gray-200 flex justify-between items-center bg-gray-50/50">
+                            <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
                                 <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
                                 Question Bank
                             </h2>
-                            <button onclick="window.location.href='dashboard.html'" class="text-sm px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition-colors border border-slate-700">Student View</button>
+                            <button onclick="window.location.href='dashboard.html'" class="text-sm px-4 py-2 bg-white hover:bg-slate-700 text-gray-700 rounded-lg transition-colors border border-gray-300">Student View</button>
                         </div>
                         
                         <div class="p-6 flex-1 flex flex-col overflow-hidden">
                             <!-- Filters -->
                             <div class="grid grid-cols-4 gap-3 mb-6">
-                                <select id="filterSubject" class="bg-slate-900 border border-slate-700 text-slate-300 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5 transition-colors">
+                                <select id="filterSubject" class="bg-gray-50 border border-gray-300 text-gray-700 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5 transition-colors">
                                     <option value="">All Subjects</option>
                                     <option value="physics">Physics</option>
                                     <option value="chemistry">Chemistry</option>
                                     <option value="maths">Mathematics</option>
                                     <option value="biology">Biology</option>
                                 </select>
-                                <select id="filterChapter" class="bg-slate-900 border border-slate-700 text-slate-300 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5 transition-colors">
+                                <select id="filterChapter" class="bg-gray-50 border border-gray-300 text-gray-700 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5 transition-colors">
                                     <option value="">All Chapters</option>
                                 </select>
-                                <select id="filterDifficulty" class="bg-slate-900 border border-slate-700 text-slate-300 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5 transition-colors">
+                                <select id="filterDifficulty" class="bg-gray-50 border border-gray-300 text-gray-700 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5 transition-colors">
                                     <option value="">All Difficulties</option>
                                     <option value="easy">Easy</option>
                                     <option value="medium">Medium</option>
@@ -159,45 +159,45 @@
                             </div>
                             
                             <!-- Pagination -->
-                            <div class="mt-6 pt-4 border-t border-slate-800 flex items-center justify-between text-sm">
-                                <button id="btnPrevPage" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition-colors border border-slate-700 disabled:opacity-50">Previous</button>
-                                <span id="pageInfo" class="text-slate-400 font-medium">Page 1</span>
-                                <button id="btnNextPage" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition-colors border border-slate-700 disabled:opacity-50">Next</button>
+                            <div class="mt-6 pt-4 border-t border-gray-200 flex items-center justify-between text-sm">
+                                <button id="btnPrevPage" class="px-4 py-2 bg-white hover:bg-slate-700 text-gray-700 rounded-lg transition-colors border border-gray-300 disabled:opacity-50">Previous</button>
+                                <span id="pageInfo" class="text-gray-600 font-medium">Page 1</span>
+                                <button id="btnNextPage" class="px-4 py-2 bg-white hover:bg-slate-700 text-gray-700 rounded-lg transition-colors border border-gray-300 disabled:opacity-50">Next</button>
                             </div>
                         </div>
                     </div>
 
                     <!-- Right Pane: Exam Draft -->
                     <div class="glass-panel rounded-xl flex flex-col h-full shadow-2xl overflow-hidden border-t-4 border-t-cyan-500">
-                        <div class="px-6 py-5 border-b border-slate-800 flex justify-between items-center bg-slate-900/50">
-                            <h2 class="text-lg font-semibold text-slate-100">Exam Draft</h2>
-                            <span id="draftCount" class="bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 text-xs font-bold px-2.5 py-1 rounded-full">0 Qs</span>
+                        <div class="px-6 py-5 border-b border-gray-200 flex justify-between items-center bg-gray-50/50">
+                            <h2 class="text-lg font-semibold text-gray-900">Exam Draft</h2>
+                            <span id="draftCount" class="bg-indigo-600/10 text-indigo-600 border border-indigo-600/20 text-xs font-bold px-2.5 py-1 rounded-full">0 Qs</span>
                         </div>
                         
                         <div class="p-6 flex-1 overflow-y-auto">
                             <div class="space-y-4">
                                 <div>
-                                    <label class="block mb-2 text-sm font-medium text-slate-300">Exam Title</label>
-                                    <input type="text" id="examTitle" class="bg-slate-900 border border-slate-700 text-slate-200 text-sm rounded-lg focus:ring-cyan-500 focus:border-cyan-500 block w-full p-2.5 transition-colors" placeholder="e.g., JEE Advanced Mock 1">
+                                    <label class="block mb-2 text-sm font-medium text-gray-700">Exam Title</label>
+                                    <input type="text" id="examTitle" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-600 focus:border-indigo-600 block w-full p-2.5 transition-colors" placeholder="e.g., JEE Advanced Mock 1">
                                 </div>
                                 
                                 <div>
-                                    <label class="block mb-2 text-sm font-medium text-slate-300">Description</label>
-                                    <input type="text" id="examDescription" class="bg-slate-900 border border-slate-700 text-slate-200 text-sm rounded-lg focus:ring-cyan-500 focus:border-cyan-500 block w-full p-2.5 transition-colors" placeholder="Optional details">
+                                    <label class="block mb-2 text-sm font-medium text-gray-700">Description</label>
+                                    <input type="text" id="examDescription" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-600 focus:border-indigo-600 block w-full p-2.5 transition-colors" placeholder="Optional details">
                                 </div>
 
                                 <div class="grid grid-cols-3 gap-4">
                                     <div>
-                                        <label class="block mb-2 text-sm font-medium text-slate-300">Duration (Mins)</label>
-                                        <input type="number" id="examDuration" value="180" class="bg-slate-900 border border-slate-700 text-slate-200 text-sm rounded-lg focus:ring-cyan-500 focus:border-cyan-500 block w-full p-2.5 transition-colors">
+                                        <label class="block mb-2 text-sm font-medium text-gray-700">Duration (Mins)</label>
+                                        <input type="number" id="examDuration" value="180" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-600 focus:border-indigo-600 block w-full p-2.5 transition-colors">
                                     </div>
                                     <div>
-                                        <label class="block mb-2 text-sm font-medium text-slate-300">Target Batch</label>
-                                        <input type="text" id="targetBatch" placeholder="Global (Leave empty)" class="bg-slate-900 border border-slate-700 text-slate-200 text-sm rounded-lg focus:ring-cyan-500 focus:border-cyan-500 block w-full p-2.5 transition-colors">
+                                        <label class="block mb-2 text-sm font-medium text-gray-700">Target Batch</label>
+                                        <input type="text" id="targetBatch" placeholder="Global (Leave empty)" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-600 focus:border-indigo-600 block w-full p-2.5 transition-colors">
                                     </div>
                                     <div>
-                                        <label class="block mb-2 text-sm font-medium text-slate-300">Exam Type</label>
-                                        <select id="examType" class="bg-slate-900 border border-slate-700 text-slate-200 text-sm rounded-lg focus:ring-cyan-500 focus:border-cyan-500 block w-full p-2.5 transition-colors">
+                                        <label class="block mb-2 text-sm font-medium text-gray-700">Exam Type</label>
+                                        <select id="examType" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-600 focus:border-indigo-600 block w-full p-2.5 transition-colors">
                                             <option value="jee">JEE Main (PCM)</option>
                                             <option value="neet">NEET (PCB)</option>
                                             <option value="custom">Custom Configuration</option>
@@ -206,38 +206,38 @@
                                 </div>
 
                                 <!-- Dynamic Quota Inputs -->
-                                <div id="quotaInputsContainer" class="bg-slate-900/50 border border-slate-800 rounded-lg p-4 mt-4">
-                                    <h4 class="text-sm font-medium text-slate-300 mb-3 border-b border-slate-800 pb-2 flex justify-between items-center">
+                                <div id="quotaInputsContainer" class="bg-gray-50/50 border border-gray-200 rounded-lg p-4 mt-4">
+                                    <h4 class="text-sm font-medium text-gray-700 mb-3 border-b border-gray-200 pb-2 flex justify-between items-center">
                                         Subject Distribution
-                                        <span id="quotaTotalLabel" class="text-xs text-slate-500 font-normal">Total: 0 Qs</span>
+                                        <span id="quotaTotalLabel" class="text-xs text-gray-500 font-normal">Total: 0 Qs</span>
                                     </h4>
                                     <!-- Inputs will be injected here via JS -->
                                     <div id="quotaInputs" class="grid grid-cols-2 gap-4"></div>
                                 </div>
                                     <div>
-                                        <label class="block mb-2 text-sm font-medium text-slate-300">Status</label>
-                                        <select id="examStatus" class="bg-slate-900 border border-slate-700 text-slate-300 text-sm rounded-lg focus:ring-cyan-500 focus:border-cyan-500 block w-full p-2.5 transition-colors">
+                                        <label class="block mb-2 text-sm font-medium text-gray-700">Status</label>
+                                        <select id="examStatus" class="bg-gray-50 border border-gray-300 text-gray-700 text-sm rounded-lg focus:ring-indigo-600 focus:border-indigo-600 block w-full p-2.5 transition-colors">
                                             <option value="draft">Draft</option>
                                             <option value="published">Published</option>
                                         </select>
                                     </div>
                                     <div>
-                                        <label class="block mb-2 text-sm font-medium text-slate-300">Start Time (If Published)</label>
-                                        <input type="datetime-local" id="examStartsAt" class="bg-slate-900 border border-slate-700 text-slate-200 text-sm rounded-lg focus:ring-cyan-500 focus:border-cyan-500 block w-full p-2.5 transition-colors">
+                                        <label class="block mb-2 text-sm font-medium text-gray-700">Start Time (If Published)</label>
+                                        <input type="datetime-local" id="examStartsAt" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-600 focus:border-indigo-600 block w-full p-2.5 transition-colors">
                                     </div>
                                 </div>
                             </div>
 
                             <div class="mt-8">
-                                <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4 border-b border-slate-800 pb-2">Selected Questions</h3>
+                                <h3 class="text-sm font-semibold text-gray-600 uppercase tracking-wider mb-4 border-b border-gray-200 pb-2">Selected Questions</h3>
                                 <div id="draftList" class="space-y-3">
-                                    <p class="text-slate-500 text-sm text-center py-8 italic bg-slate-900/30 rounded-lg border border-dashed border-slate-800">No questions added yet.</p>
+                                    <p class="text-gray-500 text-sm text-center py-8 italic bg-gray-50/30 rounded-lg border border-dashed border-gray-200">No questions added yet.</p>
                                 </div>
                             </div>
                         </div>
                         
-                        <div class="p-6 border-t border-slate-800 bg-slate-900/50">
-                            <button id="btnCreateExam" class="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-semibold rounded-lg text-sm px-5 py-3 transition-colors shadow-lg shadow-cyan-600/20 flex justify-center items-center gap-2">
+                        <div class="p-6 border-t border-gray-200 bg-gray-50/50">
+                            <button id="btnCreateExam" class="w-full bg-indigo-700 hover:bg-cyan-700 text-white font-semibold rounded-lg text-sm px-5 py-3 transition-colors shadow-lg shadow-cyan-600/20 flex justify-center items-center gap-2">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
                                 Create Exam
                             </button>
@@ -249,13 +249,13 @@
             <!-- ─── Tab: Pending Tasks ────────────────────────────────────────── -->
             <section id="tab-tasks" class="tab-pane h-full p-6">
                 <div class="max-w-4xl mx-auto glass-panel rounded-xl shadow-2xl overflow-hidden border-t-4 border-t-amber-500 flex flex-col h-full">
-                    <div class="px-8 py-6 border-b border-slate-800 bg-slate-900/50 flex justify-between items-center">
+                    <div class="px-8 py-6 border-b border-gray-200 bg-gray-50/50 flex justify-between items-center">
                         <div>
-                            <h2 class="text-xl font-bold text-slate-100 flex items-center gap-3">
+                            <h2 class="text-xl font-bold text-gray-900 flex items-center gap-3">
                                 <svg class="w-6 h-6 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
                                 Pending Exam Tasks
                             </h2>
-                            <p class="text-slate-400 text-sm mt-1">Select an exam to fill the requested question quotas.</p>
+                            <p class="text-gray-600 text-sm mt-1">Select an exam to fill the requested question quotas.</p>
                         </div>
                     </div>
                     
@@ -270,40 +270,40 @@
             <!-- ─── Tab: User Management ────────────────────────────────────────── -->
             <section id="tab-users" class="tab-pane h-full p-6">
                 <div class="max-w-4xl mx-auto glass-panel rounded-xl shadow-2xl overflow-hidden border-t-4 border-t-emerald-500">
-                    <div class="px-8 py-6 border-b border-slate-800 bg-slate-900/50">
-                        <h2 class="text-xl font-bold text-slate-100 flex items-center gap-3">
-                            <svg class="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                    <div class="px-8 py-6 border-b border-gray-200 bg-gray-50/50">
+                        <h2 class="text-xl font-bold text-gray-900 flex items-center gap-3">
+                            <svg class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
                             Bulk Student Import
                         </h2>
-                        <p class="text-slate-400 text-sm mt-1">Upload a CSV file to automatically provision student accounts.</p>
+                        <p class="text-gray-600 text-sm mt-1">Upload a CSV file to automatically provision student accounts.</p>
                     </div>
                     
                     <div class="p-8">
-                        <div class="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-4 mb-8 flex gap-3">
-                            <svg class="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        <div class="bg-indigo-600/10 border border-emerald-500/20 rounded-lg p-4 mb-8 flex gap-3">
+                            <svg class="w-5 h-5 text-indigo-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                             <div class="text-sm text-emerald-100/80">
                                 <p class="font-semibold text-emerald-300 mb-1">CSV Format Requirements</p>
-                                <p>The file must contain headers: <code class="bg-slate-900 px-1.5 py-0.5 rounded text-emerald-300">name</code>, <code class="bg-slate-900 px-1.5 py-0.5 rounded text-emerald-300">email</code>, <code class="bg-slate-900 px-1.5 py-0.5 rounded text-emerald-300">password</code>, and optionally <code class="bg-slate-900 px-1.5 py-0.5 rounded text-emerald-300">batch</code>. Existing emails will be skipped safely without data leakage.</p>
+                                <p>The file must contain headers: <code class="bg-gray-50 px-1.5 py-0.5 rounded text-emerald-300">name</code>, <code class="bg-gray-50 px-1.5 py-0.5 rounded text-emerald-300">email</code>, <code class="bg-gray-50 px-1.5 py-0.5 rounded text-emerald-300">password</code>, and optionally <code class="bg-gray-50 px-1.5 py-0.5 rounded text-emerald-300">batch</code>. Existing emails will be skipped safely without data leakage.</p>
                             </div>
                         </div>
 
-                        <div class="border-2 border-dashed border-slate-700 rounded-xl p-8 bg-slate-900/30 text-center hover:border-emerald-500/50 hover:bg-slate-900/50 transition-colors">
+                        <div class="border-2 border-dashed border-gray-300 rounded-xl p-8 bg-gray-50/30 text-center hover:border-emerald-500/50 hover:bg-gray-50/50 transition-colors">
                             <input type="file" id="csvFileInput" accept=".csv" class="hidden">
                             <label for="csvFileInput" class="cursor-pointer flex flex-col items-center">
-                                <div class="w-16 h-16 bg-slate-800 rounded-full flex items-center justify-center mb-4">
-                                    <svg class="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                                <div class="w-16 h-16 bg-white rounded-full flex items-center justify-center mb-4">
+                                    <svg class="w-8 h-8 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
                                 </div>
-                                <span class="text-slate-300 font-medium text-lg">Click to select CSV file</span>
-                                <span class="text-slate-500 text-sm mt-2" id="csvFileName">or drag and drop</span>
+                                <span class="text-gray-700 font-medium text-lg">Click to select CSV file</span>
+                                <span class="text-gray-500 text-sm mt-2" id="csvFileName">or drag and drop</span>
                             </label>
                         </div>
 
                         <div class="mt-8 flex justify-end gap-4">
-                            <button id="btnDownloadTemplate" class="bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold rounded-lg text-sm px-8 py-3 transition-colors border border-slate-700 flex items-center gap-2">
+                            <button id="btnDownloadTemplate" class="bg-white hover:bg-slate-700 text-gray-700 font-semibold rounded-lg text-sm px-8 py-3 transition-colors border border-gray-300 flex items-center gap-2">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
                                 Download Template
                             </button>
-                            <button id="btnUploadCsv" class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-lg text-sm px-8 py-3 transition-colors shadow-lg shadow-emerald-600/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
+                            <button id="btnUploadCsv" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg text-sm px-8 py-3 transition-colors shadow-lg shadow-emerald-600/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
                                 Upload Students
                             </button>
