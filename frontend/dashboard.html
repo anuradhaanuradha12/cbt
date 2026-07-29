@@ -180,7 +180,7 @@
             <div class="user-info">
                 <div id="welcomeMessage">Loading...</div>
                 <div class="avatar" id="userAvatar">?</div>
-                <button onclick="api.logout()" class="btn-primary" style="padding: 0.5rem 1rem; margin-top: 0; background: transparent; border: 1px solid var(--border);">Logout</button>
+                <button onclick="api.logout()" style="padding: 0.5rem 1rem; margin-top: 0; background: transparent; border: 1px solid var(--border); border-radius: var(--radius-md); font-weight: 500; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.backgroundColor='var(--bg-input)'; this.style.color='var(--danger)'" onmouseout="this.style.backgroundColor='transparent'; this.style.color='var(--text-primary)'">Logout</button>
             </div>
         </header>
 

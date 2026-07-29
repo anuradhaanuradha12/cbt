@@ -11,6 +11,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // If already logged in, redirect to dashboard
     if (api.getToken()) {
         window.location.href = '/dashboard';
+    } else {
+        // Clear fields in case the browser cached them from a previous session
+        emailInput.value = '';
+        passwordInput.value = '';
     }
     
     const setLoading = (isLoading) => {
