@@ -249,11 +249,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         const q = questions[index];
         
         questionNumber.textContent = `Question ${index + 1}`;
-        questionText.className = 'whitespace-pre-wrap text-slate-200 mt-2 font-medium leading-relaxed';
+        questionText.className = 'whitespace-pre-wrap text-gray-900 mt-2 font-medium leading-relaxed';
         questionText.innerHTML = q.question_text || 'No question text available.';
         
         if (q.image_r2_key) {
-            questionText.innerHTML += `<br><img src="/images/${q.image_r2_key}" class="mt-3 max-h-64 rounded border border-slate-700" alt="Question Image">`;
+            questionText.innerHTML += `<br><img src="/images/${q.image_r2_key}" class="mt-3 max-h-64 rounded border border-gray-300" alt="Question Image">`;
         }
         
         // Render Options

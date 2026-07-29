@@ -69,7 +69,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         </span>
                     </div>
                     <div class="whitespace-pre-wrap">${ans.question_text}</div>
-                    ${ans.image_r2_key ? `<img src="/images/${ans.image_r2_key}" class="mt-3 max-h-64 rounded border border-slate-700" alt="Question Image">` : ''}
+                    ${ans.image_r2_key ? `<img src="/images/${ans.image_r2_key}" class="mt-3 max-h-64 rounded border border-gray-300" alt="Question Image">` : ''}
                     <div style="margin-top: 1rem;">
                         ${optionsHtml}
                     </div>
@@ -81,7 +81,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         <div class="explanation whitespace-pre-wrap">
                             <strong>Explanation:</strong><br>
                             ${ans.explanation}
-                            ${ans.explanation_image_r2_key ? `<br><img src="/images/${ans.explanation_image_r2_key}" class="mt-3 max-h-48 rounded border border-slate-700" alt="Solution Image">` : ''}
+                            ${ans.explanation_image_r2_key ? `<br><img src="/images/${ans.explanation_image_r2_key}" class="mt-3 max-h-48 rounded border border-gray-300" alt="Solution Image">` : ''}
                         </div>
                     ` : ''}
                 `;

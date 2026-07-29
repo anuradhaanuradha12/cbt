@@ -146,7 +146,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <div class="stat-label">Avg. Score</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-value text-emerald-400">${overall.total_correct}</div>
+                    <div class="stat-value text-indigo-600">${overall.total_correct}</div>
                     <div class="stat-label">Total Correct</div>
                 </div>
                 <div class="stat-card">
@@ -162,9 +162,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const acc = s.total_questions > 0 ? Math.round((s.total_correct / s.total_questions) * 100) : 0;
                     return `
                         <tr>
-                            <td class="font-medium text-slate-200">${s.subject}</td>
+                            <td class="font-medium text-gray-900">${s.subject}</td>
                             <td>${s.total_questions}</td>
-                            <td class="text-emerald-400">${s.total_correct}</td>
+                            <td class="text-indigo-600">${s.total_correct}</td>
                             <td class="text-red-400">${s.total_wrong}</td>
                             <td>
                                 <div style="display: flex; align-items: center; gap: 0.5rem;">
@@ -178,7 +178,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     `;
                 }).join('');
             } else {
-                subjectTbody.innerHTML = '<tr><td colspan="5" class="text-center text-slate-500 py-4">No data available yet</td></tr>';
+                subjectTbody.innerHTML = '<tr><td colspan="5" class="text-center text-gray-500 py-4">No data available yet</td></tr>';
             }
 
             // 3. Chapter Weaknesses
@@ -188,10 +188,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const acc = c.total_questions > 0 ? Math.round((c.total_correct / c.total_questions) * 100) : 0;
                     return `
                         <tr>
-                            <td class="font-medium text-slate-200">${c.chapter}</td>
-                            <td class="text-slate-400 text-sm">${c.subject}</td>
+                            <td class="font-medium text-gray-900">${c.chapter}</td>
+                            <td class="text-gray-600 text-sm">${c.subject}</td>
                             <td>${c.total_questions}</td>
-                            <td class="text-emerald-400">${c.total_correct}</td>
+                            <td class="text-indigo-600">${c.total_correct}</td>
                             <td class="text-red-400">${c.total_wrong}</td>
                             <td>
                                 <span style="color: ${acc < 50 ? 'var(--danger)' : acc < 75 ? 'var(--warning)' : 'var(--emerald)'}">${acc}%</span>
@@ -200,7 +200,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     `;
                 }).join('');
             } else {
-                chapterTbody.innerHTML = '<tr><td colspan="6" class="text-center text-slate-500 py-4">No data available yet</td></tr>';
+                chapterTbody.innerHTML = '<tr><td colspan="6" class="text-center text-gray-500 py-4">No data available yet</td></tr>';
             }
 
             loading.style.display = 'none';

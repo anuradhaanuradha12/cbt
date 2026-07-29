@@ -64,10 +64,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Handle Link Styles
             navLinks.forEach(l => {
                 l.classList.remove('bg-indigo-500/10', 'text-indigo-400');
-                l.classList.add('text-slate-400', 'hover:text-slate-200', 'hover:bg-slate-800/50');
+                l.classList.add('text-gray-600', 'hover:text-gray-900', 'hover:bg-white/50');
             });
             const clickedLink = e.currentTarget;
-            clickedLink.classList.remove('text-slate-400', 'hover:text-slate-200', 'hover:bg-slate-800/50');
+            clickedLink.classList.remove('text-gray-600', 'hover:text-gray-900', 'hover:bg-white/50');
             clickedLink.classList.add('bg-indigo-500/10', 'text-indigo-400');
             
             // Handle Panes
@@ -83,7 +83,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     async function loadTasks(user) {
         const tasksList = document.getElementById('tasksList');
-        tasksList.innerHTML = '<div class="text-slate-400 text-center animate-pulse py-8">Loading tasks...</div>';
+        tasksList.innerHTML = '<div class="text-gray-600 text-center animate-pulse py-8">Loading tasks...</div>';
         
         try {
             const res = await api.request('/exams?status=draft');
@@ -97,7 +97,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
             
             if (exams.length === 0) {
-                tasksList.innerHTML = '<p class="text-slate-500 text-sm text-center py-8 italic bg-slate-900/30 rounded-lg border border-dashed border-slate-800">No pending tasks found for your subject.</p>';
+                tasksList.innerHTML = '<p class="text-gray-500 text-sm text-center py-8 italic bg-gray-50/30 rounded-lg border border-dashed border-gray-200">No pending tasks found for your subject.</p>';
                 return;
             }
             
@@ -107,11 +107,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const userQuota = user.subject ? quotas[user.subject] : JSON.stringify(quotas);
                 
                 return `
-                <div class="p-5 bg-slate-800/50 rounded-xl border border-slate-700 hover:border-amber-500/50 transition-colors">
+                <div class="p-5 bg-white/50 rounded-xl border border-gray-300 hover:border-amber-500/50 transition-colors">
                     <div class="flex justify-between items-start mb-3">
                         <div>
-                            <h3 class="text-lg font-semibold text-slate-200">${exam.title}</h3>
-                            <p class="text-sm text-slate-400 mt-1">${exam.description || 'No description'}</p>
+                            <h3 class="text-lg font-semibold text-gray-900">${exam.title}</h3>
+                            <p class="text-sm text-gray-600 mt-1">${exam.description || 'No description'}</p>
                         </div>
                         <span class="px-3 py-1 bg-amber-500/20 text-amber-400 text-xs font-bold rounded-full border border-amber-500/30">
                             Quota: ${userQuota}
@@ -204,10 +204,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     csvFileInput.addEventListener('change', (e) => {
         if (e.target.files.length > 0) {
             csvFileName.textContent = e.target.files[0].name;
-            csvFileName.classList.add('text-emerald-400');
+            csvFileName.classList.add('text-indigo-600');
         } else {
             csvFileName.textContent = 'or drag and drop';
-            csvFileName.classList.remove('text-emerald-400');
+            csvFileName.classList.remove('text-indigo-600');
         }
     });
 
@@ -235,7 +235,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             loadingIndicator.classList.remove('flex');
             
             if (response.data.length === 0) {
-                questionsContainer.innerHTML = '<p class="text-slate-500 text-sm text-center py-8 italic bg-slate-900/30 rounded-lg border border-dashed border-slate-800">No questions found.</p>';
+                questionsContainer.innerHTML = '<p class="text-gray-500 text-sm text-center py-8 italic bg-gray-50/30 rounded-lg border border-dashed border-gray-200">No questions found.</p>';
                 return;
             }
             
@@ -247,17 +247,17 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const isSelected = selectedQuestions.some(sq => sq.id === q.id);
                 
                 const card = document.createElement('div');
-                card.className = `p-4 rounded-xl border transition-colors relative ${isSelected ? 'bg-indigo-500/10 border-indigo-500/50 shadow-[0_0_15px_rgba(99,102,241,0.1)]' : 'bg-slate-900 border-slate-800 hover:border-slate-700'}`;
+                card.className = `p-4 rounded-xl border transition-colors relative ${isSelected ? 'bg-indigo-500/10 border-indigo-500/50 shadow-[0_0_15px_rgba(99,102,241,0.1)]' : 'bg-gray-50 border-gray-200 hover:border-gray-300'}`;
                 
                 // Format options
                 let optionsHtml = '';
                 if (q.option_a && q.option_b) {
                     optionsHtml = `
-                        <div class="grid grid-cols-2 gap-2 mt-3 text-sm text-slate-400">
-                            <div class="bg-slate-800/50 p-2 rounded border border-slate-700"><strong class="text-slate-300">A)</strong> ${q.option_a}</div>
-                            <div class="bg-slate-800/50 p-2 rounded border border-slate-700"><strong class="text-slate-300">B)</strong> ${q.option_b}</div>
-                            ${q.option_c ? `<div class="bg-slate-800/50 p-2 rounded border border-slate-700"><strong class="text-slate-300">C)</strong> ${q.option_c}</div>` : ''}
-                            ${q.option_d ? `<div class="bg-slate-800/50 p-2 rounded border border-slate-700"><strong class="text-slate-300">D)</strong> ${q.option_d}</div>` : ''}
+                        <div class="grid grid-cols-2 gap-2 mt-3 text-sm text-gray-600">
+                            <div class="bg-white/50 p-2 rounded border border-gray-300"><strong class="text-gray-700">A)</strong> ${q.option_a}</div>
+                            <div class="bg-white/50 p-2 rounded border border-gray-300"><strong class="text-gray-700">B)</strong> ${q.option_b}</div>
+                            ${q.option_c ? `<div class="bg-white/50 p-2 rounded border border-gray-300"><strong class="text-gray-700">C)</strong> ${q.option_c}</div>` : ''}
+                            ${q.option_d ? `<div class="bg-white/50 p-2 rounded border border-gray-300"><strong class="text-gray-700">D)</strong> ${q.option_d}</div>` : ''}
                         </div>
                     `;
                 }
@@ -266,10 +266,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 let solutionHtml = '';
                 if (q.correct_answer || q.explanation) {
                     solutionHtml = `
-                        <div class="solution-block hidden mt-4 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-sm">
-                            <div class="font-bold text-emerald-400 mb-1">Correct Answer: ${q.correct_answer.toUpperCase()}</div>
+                        <div class="solution-block hidden mt-4 p-3 bg-indigo-600/10 border border-emerald-500/20 rounded-lg text-sm">
+                            <div class="font-bold text-indigo-600 mb-1">Correct Answer: ${q.correct_answer.toUpperCase()}</div>
                             ${q.explanation ? `<div class="text-emerald-100/80 mt-2 whitespace-pre-wrap">${q.explanation}</div>` : ''}
-                            ${q.explanation_image_r2_key ? `<img src="/images/${q.explanation_image_r2_key}" class="mt-3 max-h-48 rounded border border-emerald-500/30" alt="Solution Image">` : ''}
+                            ${q.explanation_image_r2_key ? `<img src="/images/${q.explanation_image_r2_key}" class="mt-3 max-h-48 rounded border border-indigo-600/30" alt="Solution Image">` : ''}
                         </div>
                     `;
                 }
@@ -277,22 +277,22 @@ document.addEventListener('DOMContentLoaded', async () => {
                 card.innerHTML = `
                     <div class="flex gap-2 flex-wrap mb-3 pr-24">
                         <span class="text-xs font-semibold px-2 py-1 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">${q.subject}</span>
-                        <span class="text-xs font-semibold px-2 py-1 rounded bg-slate-800 text-slate-300 border border-slate-700">${q.difficulty}</span>
-                        <span class="text-xs font-semibold px-2 py-1 rounded bg-slate-800 text-slate-300 border border-slate-700">${q.type}</span>
+                        <span class="text-xs font-semibold px-2 py-1 rounded bg-white text-gray-700 border border-gray-300">${q.difficulty}</span>
+                        <span class="text-xs font-semibold px-2 py-1 rounded bg-white text-gray-700 border border-gray-300">${q.type}</span>
                     </div>
                     
-                    <button class="add-btn absolute top-4 right-4 text-xs font-semibold px-4 py-2 rounded-lg transition-all border shadow-md ${isSelected ? 'bg-indigo-600/20 text-indigo-400 border-indigo-500/30 hover:bg-indigo-600/30' : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700 hover:text-white'}">
+                    <button class="add-btn absolute top-4 right-4 text-xs font-semibold px-4 py-2 rounded-lg transition-all border shadow-md ${isSelected ? 'bg-indigo-600/20 text-indigo-400 border-indigo-500/30 hover:bg-indigo-600/30' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100 hover:text-white'}">
                         ${isSelected ? '✓ Added' : '+ Add'}
                     </button>
 
-                    <div class="text-sm text-slate-200 mt-2 font-medium leading-relaxed">${q.question_text}</div>
-                    ${q.image_r2_key ? `<img src="/images/${q.image_r2_key}" class="mt-3 max-h-48 rounded border border-slate-700" alt="Question Image">` : ''}
+                    <div class="text-sm text-gray-900 mt-2 font-medium leading-relaxed">${q.question_text}</div>
+                    ${q.image_r2_key ? `<img src="/images/${q.image_r2_key}" class="mt-3 max-h-48 rounded border border-gray-300" alt="Question Image">` : ''}
                     
                     ${optionsHtml}
                     
                     ${solutionHtml ? `
-                        <div class="mt-3 flex justify-between items-center border-t border-slate-800 pt-3">
-                            <button class="toggle-solution text-xs font-medium text-emerald-400 hover:text-emerald-300 transition-colors flex items-center gap-1">
+                        <div class="mt-3 flex justify-between items-center border-t border-gray-200 pt-3">
+                            <button class="toggle-solution text-xs font-medium text-indigo-600 hover:text-emerald-300 transition-colors flex items-center gap-1">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
                                 <span>Show Solution</span>
                             </button>
@@ -350,8 +350,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         if (existingIndex >= 0) {
             selectedQuestions.splice(existingIndex, 1);
-            cardElement.className = 'p-4 rounded-xl border transition-colors relative bg-slate-900 border-slate-800 hover:border-slate-700';
-            btnElement.className = 'add-btn absolute top-4 right-4 text-xs font-semibold px-4 py-2 rounded-lg transition-all border shadow-md bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700 hover:text-white';
+            cardElement.className = 'p-4 rounded-xl border transition-colors relative bg-gray-50 border-gray-200 hover:border-gray-300';
+            btnElement.className = 'add-btn absolute top-4 right-4 text-xs font-semibold px-4 py-2 rounded-lg transition-all border shadow-md bg-white text-gray-700 border-gray-300 hover:bg-gray-100 hover:text-white';
             btnElement.textContent = '+ Add';
         } else {
             selectedQuestions.push(question);
@@ -367,20 +367,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         draftCount.textContent = `${selectedQuestions.length} Qs`;
         
         if (selectedQuestions.length === 0) {
-            draftList.innerHTML = '<p class="text-slate-500 text-sm text-center py-8 italic bg-slate-900/30 rounded-lg border border-dashed border-slate-800">No questions added yet.</p>';
+            draftList.innerHTML = '<p class="text-gray-500 text-sm text-center py-8 italic bg-gray-50/30 rounded-lg border border-dashed border-gray-200">No questions added yet.</p>';
             return;
         }
         
         draftList.innerHTML = '';
         selectedQuestions.forEach((q, index) => {
             const item = document.createElement('div');
-            item.className = 'flex justify-between items-center p-3 border-b border-slate-800 text-sm';
+            item.className = 'flex justify-between items-center p-3 border-b border-gray-200 text-sm';
             
             let preview = q.question_text.substring(0, 40).replace(/<[^>]+>/g, '');
             if (preview.length === 40) preview += '...';
             
             item.innerHTML = `
-                <span class="text-slate-300"><strong class="text-slate-100">Q${index + 1}.</strong> ${preview}</span>
+                <span class="text-gray-700"><strong class="text-gray-900">Q${index + 1}.</strong> ${preview}</span>
                 <button class="text-red-400 hover:text-red-300 transition-colors p-1" title="Remove">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
@@ -432,11 +432,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (type === 'neet' && sub === 'biology') defaultVal = 90;
 
             div.innerHTML = `
-                <label class="block mb-1 text-xs font-medium text-slate-400 capitalize flex justify-between">
+                <label class="block mb-1 text-xs font-medium text-gray-600 capitalize flex justify-between">
                     ${sub}
                     ${type === 'custom' ? `<input type="checkbox" class="quota-toggle" data-subject="${sub}" checked>` : ''}
                 </label>
-                <input type="number" min="0" data-subject="${sub}" value="${defaultVal}" class="quota-input bg-slate-950 border border-slate-700 text-slate-200 text-sm rounded focus:ring-cyan-500 focus:border-cyan-500 block w-full p-2 transition-colors">
+                <input type="number" min="0" data-subject="${sub}" value="${defaultVal}" class="quota-input bg-white border border-gray-300 text-gray-900 text-sm rounded focus:ring-indigo-600 focus:border-indigo-600 block w-full p-2 transition-colors">
             `;
             quotaInputsContainer.appendChild(div);
         });
@@ -623,14 +623,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             // POST to bulk endpoint
             const res = await api.request('/users/bulk', 'POST', { users });
             
-            csvUploadStatus.className = 'mt-6 p-4 rounded-lg text-sm bg-emerald-500/10 text-emerald-400 border border-emerald-500/20';
+            csvUploadStatus.className = 'mt-6 p-4 rounded-lg text-sm bg-indigo-600/10 text-indigo-600 border border-emerald-500/20';
             csvUploadStatus.innerHTML = `<strong>Success!</strong> Created ${res.inserted} users. <br> Skipped ${res.skipped} existing users.`;
             csvUploadStatus.classList.remove('hidden');
             
             // Reset input
             csvFileInput.value = '';
             csvFileName.textContent = 'or drag and drop';
-            csvFileName.classList.remove('text-emerald-400');
+            csvFileName.classList.remove('text-indigo-600');
 
         } catch (error) {
             csvUploadStatus.className = 'mt-6 p-4 rounded-lg text-sm bg-red-500/10 text-red-400 border border-red-500/20';
