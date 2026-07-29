@@ -621,7 +621,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
 
             // POST to bulk endpoint
-            const res = await api.request('/users/bulk', 'POST', { users });
+            const res = await api.request('/users/bulk', 'POST', users);
             
             csvUploadStatus.className = 'mt-6 p-4 rounded-lg text-sm bg-indigo-600/10 text-indigo-600 border border-emerald-500/20';
             csvUploadStatus.innerHTML = `<strong>Success!</strong> Created ${res.inserted} users. <br> Skipped ${res.skipped} existing users.`;
