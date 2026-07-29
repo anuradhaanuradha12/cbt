@@ -83,6 +83,16 @@
         }
     </style>
 <link href='https://fonts.googleapis.com/css2?family=Gabarito:wght@400;500;600;700&display=swap' rel='stylesheet'>
+
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#5846f6">
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('sw.js');
+        });
+      }
+    </script>
 </head>
 <body>
     <div class="results-container">

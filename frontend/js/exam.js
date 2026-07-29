@@ -438,7 +438,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
 
         // 5. Enforce Fullscreen
+        const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+        
         const requestFullscreen = () => {
+            if (isStandalone) return; // PWAs are already full screen
             const elem = document.documentElement;
             if (elem.requestFullscreen) elem.requestFullscreen();
             else if (elem.webkitRequestFullscreen) elem.webkitRequestFullscreen();
@@ -447,13 +450,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // Try to request on first interaction if not already
         document.addEventListener('click', () => {
-            if (!document.fullscreenElement) {
+            if (!isStandalone && !document.fullscreenElement) {
                 requestFullscreen();
             }
         }, { once: true });
 
         document.addEventListener('fullscreenchange', () => {
-            if (!document.fullscreenElement) {
+            if (!isStandalone && !document.fullscreenElement) {
                 handleStrike('Exiting fullscreen is prohibited during the exam');
                 // Force an overlay or re-request (in modern browsers, re-requesting without user gesture is blocked)
             }
