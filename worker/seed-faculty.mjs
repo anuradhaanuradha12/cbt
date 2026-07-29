@@ -2,8 +2,8 @@ import crypto from 'crypto';
 import fs from 'fs';
 
 // Configuration
-const EMAIL = 'faculty@qforge-demo.edu';
-const PASSWORD = 'FacultyPassword@123';
+const EMAIL = 'faculty@example.com';
+const PASSWORD = 'change_me_in_production';
 const NAME = 'Dr. Demo Faculty';
 const ROLE = 'faculty';
 const SUBJECT = 'physics';

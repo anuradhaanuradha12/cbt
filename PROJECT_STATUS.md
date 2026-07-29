@@ -70,5 +70,5 @@
 ## Accessing Local Dev
 - **Worker API**: `http://127.0.0.1:8787`
 - **Frontend**: Double click `frontend/index.html` or `frontend/question-gen.html` in your browser.
-- **Admin Test Credentials**: `admin@cbt.local` / `Admin@1234`
+- **Admin Test Credentials**: `admin@example.com` / `change_me_in_production`
 - **Intern Creation**: Run `node worker/seed-content-creator.mjs` to bootstrap an intern account.

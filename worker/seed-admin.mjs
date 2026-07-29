@@ -32,14 +32,14 @@ async function hashPassword(password) {
   return `${toHex(salt.buffer)}:${toHex(bits)}`;
 }
 
-const password = 'Admin@1234'; // Change before use
+const password = 'change_me_in_production'; // Change before use
 const hash = await hashPassword(password);
 const id = crypto.randomUUID();
 
 const sql = `
 -- Run this in: npx wrangler d1 execute cbt-platform --local --command "<paste here>"
 INSERT OR IGNORE INTO users (id, email, password_hash, role, name)
-VALUES ('${id}', 'admin@cbt.local', '${hash}', 'admin', 'Platform Admin');
+VALUES ('${id}', 'admin@example.com', '${hash}', 'admin', 'Platform Admin');
 `.trim();
 
 console.log(sql);

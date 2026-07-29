@@ -2,8 +2,8 @@ import crypto from 'crypto';
 import fs from 'fs';
 
 // Configuration
-const EMAIL = 'student@qforge-demo.edu';
-const PASSWORD = 'StudentPassword@123';
+const EMAIL = 'student@example.com';
+const PASSWORD = 'change_me_in_production';
 const NAME = 'Demo Student';
 const ROLE = 'student';
 const COLLEGE_ID = 'ngi'; // Must match the faculty's college_id so the student can see their exams

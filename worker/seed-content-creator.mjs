@@ -16,8 +16,8 @@
 
 // ── Configure intern details here ────────────────────────────────────────────
 const INTERN_NAME     = 'Intern One';         // ← Change for each intern
-const INTERN_EMAIL    = 'intern1@ngi.edu';    // ← Change for each intern
-const INTERN_PASSWORD = 'Intern@1234';        // ← Change (or use a random generator)
+const INTERN_EMAIL    = 'intern@example.com';    // ← Change for each intern
+const INTERN_PASSWORD = 'change_me_in_production';        // ← Change (or use a random generator)
 const INTERN_SUBJECT  = 'physics';            // ← Lock to a subject, or leave '' for all subjects
 // ─────────────────────────────────────────────────────────────────────────────
 
