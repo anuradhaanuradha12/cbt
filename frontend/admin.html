@@ -125,7 +125,7 @@
             
             <!-- ─── Tab: Exams & Questions ────────────────────────────────────────── -->
             <section id="tab-questions" class="tab-pane active h-full p-4 md:p-6 overflow-y-auto md:overflow-hidden">
-                <div class="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6 min-h-full max-w-[1600px] mx-auto pb-10 md:pb-0">
+                <div class="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6 h-full max-w-[1600px] mx-auto pb-10 md:pb-0">
                     
                     <!-- Left Pane: Question Bank -->
                     <div class="glass-panel rounded-xl flex flex-col h-[800px] lg:h-full shadow-2xl overflow-hidden">
@@ -164,7 +164,7 @@
                                 <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
                             </div>
                             
-                            <div id="questionsContainer" class="flex-1 overflow-visible md:overflow-y-auto pr-2 space-y-4">
+                            <div id="questionsContainer" class="flex-1 overflow-y-auto pr-2 space-y-4">
                                 <!-- Questions injected here via JS -->
                             </div>
                             
@@ -268,8 +268,7 @@
                             <p class="text-gray-600 text-sm mt-1">Select an exam to fill the requested question quotas.</p>
                         </div>
                     </div>
-                    
-                    <div class="p-8 flex-1 overflow-visible md:overflow-y-auto">
+                    <div class="flex-1 p-6 overflow-y-auto">
                         <div id="tasksList" class="space-y-4">
                             <!-- Tasks injected here -->
                         </div>
@@ -279,7 +278,7 @@
 
             <!-- ─── Tab: User Management ────────────────────────────────────────── -->
             <section id="tab-users" class="tab-pane h-full p-6">
-                <div class="max-w-4xl mx-auto glass-panel rounded-xl shadow-2xl overflow-hidden border-t-4 border-t-emerald-500">
+                <div class="max-w-4xl mx-auto glass-panel rounded-xl shadow-2xl overflow-hidden border-t-4 border-t-indigo-500">
                     <div class="px-8 py-6 border-b border-gray-200 bg-gray-50/50">
                         <h2 class="text-xl font-bold text-gray-900 flex items-center gap-3">
                             <svg class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
@@ -289,15 +288,15 @@
                     </div>
                     
                     <div class="p-8">
-                        <div class="bg-indigo-600/10 border border-emerald-500/20 rounded-lg p-4 mb-8 flex gap-3">
+                        <div class="bg-indigo-50 border border-indigo-200 rounded-lg p-4 mb-8 flex gap-3">
                             <svg class="w-5 h-5 text-indigo-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                            <div class="text-sm text-emerald-100/80">
-                                <p class="font-semibold text-emerald-300 mb-1">CSV Format Requirements</p>
-                                <p>The file must contain headers: <code class="bg-gray-50 px-1.5 py-0.5 rounded text-emerald-300">name</code>, <code class="bg-gray-50 px-1.5 py-0.5 rounded text-emerald-300">email</code>, <code class="bg-gray-50 px-1.5 py-0.5 rounded text-emerald-300">password</code>, and optionally <code class="bg-gray-50 px-1.5 py-0.5 rounded text-emerald-300">batch</code>. Existing emails will be skipped safely without data leakage.</p>
+                            <div class="text-sm text-indigo-900">
+                                <p class="font-semibold text-indigo-800 mb-1">CSV Format Requirements</p>
+                                <p>The file must contain headers: <code class="bg-white border border-gray-200 px-1.5 py-0.5 rounded text-indigo-700">name</code>, <code class="bg-white border border-gray-200 px-1.5 py-0.5 rounded text-indigo-700">email</code>, <code class="bg-white border border-gray-200 px-1.5 py-0.5 rounded text-indigo-700">password</code>, and optionally <code class="bg-white border border-gray-200 px-1.5 py-0.5 rounded text-indigo-700">batch</code>. Existing emails will be skipped safely without data leakage.</p>
                             </div>
                         </div>
 
-                        <div class="border-2 border-dashed border-gray-300 rounded-xl p-8 bg-gray-50/30 text-center hover:border-emerald-500/50 hover:bg-gray-50/50 transition-colors">
+                        <div class="border-2 border-dashed border-gray-300 rounded-xl p-8 bg-gray-50/30 text-center hover:border-indigo-500/50 hover:bg-indigo-50/50 transition-colors">
                             <input type="file" id="csvFileInput" accept=".csv" class="hidden">
                             <label for="csvFileInput" class="cursor-pointer flex flex-col items-center">
                                 <div class="w-16 h-16 bg-white rounded-full flex items-center justify-center mb-4">
