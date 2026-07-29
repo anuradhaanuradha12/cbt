@@ -57,9 +57,13 @@ export default {
 
       // 4. Static Asset Fallback
       if (env.ASSETS) {
-        const assetResponse = await env.ASSETS.fetch(request);
-        if (assetResponse.status !== 404) {
-          return assetResponse;
+        try {
+          const assetResponse = await env.ASSETS.fetch(request.url);
+          if (assetResponse.status !== 404) {
+            return assetResponse;
+          }
+        } catch (e) {
+          console.error('ASSETS fetch failed:', e);
         }
       }
 
