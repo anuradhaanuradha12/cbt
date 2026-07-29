@@ -281,7 +281,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         <span class="text-xs font-semibold px-2 py-1 rounded bg-white text-gray-700 border border-gray-300">${q.type}</span>
                     </div>
                     
-                    <button class="add-btn absolute top-4 right-4 text-xs font-semibold px-4 py-2 rounded-lg transition-all border shadow-md ${isSelected ? 'bg-indigo-600/20 text-indigo-400 border-indigo-500/30 hover:bg-indigo-600/30' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100 hover:text-white'}">
+                    <button class="add-btn absolute top-4 right-4 text-xs font-semibold px-4 py-2 rounded-lg transition-all border shadow-md ${isSelected ? 'bg-indigo-600/20 text-indigo-400 border-indigo-500/30 hover:bg-indigo-600/30' : 'bg-white text-gray-700 border-gray-300 hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-300'}">
                         ${isSelected ? '✓ Added' : '+ Add'}
                     </button>
 
@@ -351,7 +351,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (existingIndex >= 0) {
             selectedQuestions.splice(existingIndex, 1);
             cardElement.className = 'p-4 rounded-xl border transition-colors relative bg-gray-50 border-gray-200 hover:border-gray-300';
-            btnElement.className = 'add-btn absolute top-4 right-4 text-xs font-semibold px-4 py-2 rounded-lg transition-all border shadow-md bg-white text-gray-700 border-gray-300 hover:bg-gray-100 hover:text-white';
+            btnElement.className = 'add-btn absolute top-4 right-4 text-xs font-semibold px-4 py-2 rounded-lg transition-all border shadow-md bg-white text-gray-700 border-gray-300 hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-300';
             btnElement.textContent = '+ Add';
         } else {
             selectedQuestions.push(question);
