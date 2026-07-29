@@ -33,3 +33,5 @@ worker/import-questions-local.mjs
 worker/import-questions.mjs
 worker/migrate-images.ts
 worker/restore-text.mjs
+
+INTERNAL_README.md
