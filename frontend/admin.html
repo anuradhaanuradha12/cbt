@@ -59,8 +59,7 @@
             display: none !important;
         }
         .tab-pane.active {
-            display: flex !important;
-            flex-direction: column;
+            display: block !important;
         }
     </style>
 <link href='https://fonts.googleapis.com/css2?family=Gabarito:wght@400;500;600;700&display=swap' rel='stylesheet'>
@@ -255,7 +254,7 @@
             </section>
 
             <!-- ─── Tab: Pending Tasks ────────────────────────────────────────── -->
-            <section id="tab-tasks" class="tab-pane h-full p-6 overflow-y-auto flex flex-col w-full">
+            <section id="tab-tasks" class="tab-pane h-full p-6 overflow-y-auto w-full">
                 <div class="w-full max-w-4xl mx-auto glass-panel rounded-xl shadow-2xl overflow-hidden border-t-4 border-t-amber-500 flex flex-col h-full">
                     <div class="px-8 py-6 border-b border-gray-200 bg-gray-50/50 flex justify-between items-center">
                         <div>
@@ -275,7 +274,7 @@
             </section>
 
             <!-- ─── Tab: User Management ────────────────────────────────────────── -->
-            <section id="tab-users" class="tab-pane h-full p-6 overflow-y-auto flex flex-col w-full">
+            <section id="tab-users" class="tab-pane h-full p-6 overflow-y-auto w-full">
                 <div class="w-full max-w-4xl mx-auto glass-panel rounded-xl shadow-2xl overflow-hidden border-t-4 border-t-indigo-500">
                     <div class="px-8 py-6 border-b border-gray-200 bg-gray-50/50">
                         <h2 class="text-xl font-bold text-gray-900 flex items-center gap-3">
