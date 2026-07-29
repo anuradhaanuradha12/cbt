@@ -53,21 +53,7 @@ export default {
       response ??= await imagesRouter(request, env, pathname);
       response ??= await forgeRouter(request, env, pathname);
 
-      if (response) return response;
-
-      // 4. Static Asset Fallback
-      if (env.ASSETS) {
-        try {
-          const assetResponse = await env.ASSETS.fetch(request.url);
-          if (assetResponse.status !== 404) {
-            return assetResponse;
-          }
-        } catch (e) {
-          console.error('ASSETS fetch failed:', e);
-        }
-      }
-
-      return json404(`No route for ${request.method} ${pathname}`);
+      return response ?? json404(`No route for ${request.method} ${pathname}`);
     } catch (e: any) {
       return json({ error: e.message }, 500);
     }
