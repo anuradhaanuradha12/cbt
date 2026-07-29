@@ -53,7 +53,17 @@ export default {
       response ??= await imagesRouter(request, env, pathname);
       response ??= await forgeRouter(request, env, pathname);
 
-      return response ?? json404(`No route for ${request.method} ${pathname}`);
+      if (response) return response;
+
+      if (env.ASSETS && request.method === 'GET') {
+        try {
+          return await env.ASSETS.fetch(request);
+        } catch (e) {
+          // Fall through on error
+        }
+      }
+
+      return json404(`No route for ${request.method} ${pathname}`);
     } catch (e: any) {
       return json({ error: e.message }, 500);
     }
