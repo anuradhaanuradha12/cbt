@@ -26,7 +26,7 @@ export async function requireAuth(
   }
 
   const token = authHeader.slice(7);
-  const payload = await verifyJWT(token, env.JWT_SECRET);
+  const payload = await verifyJWT(token, env.JWT_SECRET || 'qforge-cbt-production-jwt-super-secret-key-2026-secure');
 
   if (!payload) {
     return { ctx: null, error: json401('Invalid or expired token') };

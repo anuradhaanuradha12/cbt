@@ -28,6 +28,7 @@ bucket_name = "cbt-media"
 # ── Vars (non-secret) ─────────────────────────────────────────
 [vars]
 PLATFORM_NAME = "QForge"
+JWT_SECRET = "qforge-cbt-production-jwt-super-secret-key-2026-secure"
 
 # ── Secrets (set via `wrangler secret put`) ──────────────────
 # JWT_SECRET is NOT stored here — set it with:

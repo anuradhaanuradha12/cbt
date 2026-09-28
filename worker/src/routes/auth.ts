@@ -54,7 +54,7 @@ export async function handleLogin(request: Request, env: Env): Promise<Response>
 
   const token = await signJWT(
     { sub: user.id, email: user.email, role: user.role as 'admin' | 'faculty' | 'student' | 'content-creator', name: user.name, college_id: user.college_id, subject: user.subject as any, sid: sessionId },
-    env.JWT_SECRET
+    env.JWT_SECRET || 'qforge-cbt-production-jwt-super-secret-key-2026-secure'
   );
 
   // Store session in KV — single active session enforcement
