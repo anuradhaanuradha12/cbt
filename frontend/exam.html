@@ -273,6 +273,122 @@
             gap: 1.5rem;
         }
 
+        /* ── Question feedback widget ─────────────────────────── */
+        .feedback-section {
+            margin-top: 1.5rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .feedback-toggle {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            background: none;
+            border: none;
+            padding: 0.25rem 0.5rem;
+            margin-left: -0.5rem;
+            border-radius: var(--radius-sm);
+            color: var(--text-muted);
+            font: inherit;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: color 0.15s, background-color 0.15s;
+        }
+
+        .feedback-toggle:hover {
+            color: var(--primary);
+            background-color: var(--primary-light);
+        }
+
+        .feedback-toggle svg {
+            width: 1.05rem;
+            height: 1.05rem;
+            flex-shrink: 0;
+        }
+
+        .feedback-toggle.sent svg {
+            color: var(--success);
+        }
+
+        .feedback-panel {
+            margin-top: 0.75rem;
+            padding: 1rem;
+            background-color: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+        }
+
+        .feedback-label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        .feedback-textarea {
+            width: 100%;
+            min-height: 4.5rem;
+            padding: 0.6rem 0.75rem;
+            font: inherit;
+            font-size: 0.9rem;
+            color: var(--text-primary);
+            background-color: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            resize: vertical;
+            transition: border-color 0.15s, box-shadow 0.15s;
+        }
+
+        .feedback-textarea:focus {
+            outline: none;
+            border-color: var(--border-focus);
+            box-shadow: 0 0 0 3px rgba(88, 70, 246, 0.12);
+        }
+
+        .feedback-textarea:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .feedback-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem;
+            margin-top: 0.6rem;
+        }
+
+        .feedback-status {
+            font-size: 0.78rem;
+            line-height: 1.4;
+        }
+
+        .feedback-status.ok { color: var(--success); }
+        .feedback-status.err { color: var(--danger); }
+
+        .feedback-send {
+            padding: 0.4rem 1.1rem;
+            font: inherit;
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: #ffffff;
+            background-color: var(--primary);
+            border: none;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: background-color 0.15s;
+        }
+
+        .feedback-send:hover { background-color: var(--primary-hover); }
+        .feedback-send:disabled { opacity: 0.55; cursor: not-allowed; }
+
+        @media (prefers-reduced-motion: reduce) {
+            .feedback-toggle, .feedback-textarea, .feedback-send { transition: none; }
+        }
+
     </style>
 <link href='https://fonts.googleapis.com/css2?family=Gabarito:wght@400;500;600;700&display=swap' rel='stylesheet'>
 
@@ -348,6 +464,21 @@
                 <div class="options-list" id="optionsList">
                     <!-- Options injected here -->
                 </div>
+
+                <div class="feedback-section">
+                    <button id="btnToggleFeedback" class="feedback-toggle" type="button" aria-expanded="false" aria-controls="feedbackContainer">
+                        <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 20.25c2.485 0 4.5-.38 4.5-.844v-1.5a.995.995 0 0 0-1.06-.5 24.36 24.36 0 0 1-6.88 0 .995.995 0 0 0-1.06.5v1.5c0 .464 2.015.844 4.5.844Z" /><path stroke-linecap="round" stroke-linejoin="round" d="M12 20.25c2.485 0 4.5-.38 4.5-.844V9.75a3 3 0 0 0-3-3h-3a3 3 0 0 0-3 3v9.656c0 .464 2.015.844 4.5.844Z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 5.25V4.5a2.25 2.25 0 0 0-2.25-2.25h-1.5A2.25 2.25 0 0 0 9 4.5v.75" /></svg>
+                        <span id="feedbackToggleLabel">Feedback</span>
+                    </button>
+                    <div id="feedbackContainer" class="feedback-panel hidden">
+                        <label class="feedback-label" for="feedbackText">Feedback on this question</label>
+                        <textarea id="feedbackText" rows="3" maxlength="1000" class="feedback-textarea" placeholder="Something wrong with this question? Tell us what you noticed."></textarea>
+                        <div class="feedback-footer">
+                            <span id="feedbackStatus" class="feedback-status hidden"></span>
+                            <button id="btnSubmitFeedback" class="feedback-send" type="button">Send</button>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div class="exam-footer">
@@ -378,8 +509,11 @@
         </div>
     </div>
 
-    <script src="js/api.js"></script>
-    <script src="js/exam.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="js/alerts.js?v=2"></script>
+    <script src="js/api.js?v=3"></script>
+    <script src="js/exam.js?v=5"></script>
 </body>
 </html>
 

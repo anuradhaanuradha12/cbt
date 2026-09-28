@@ -10,23 +10,39 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     
     const user = JSON.parse(userStr);
-    
-    if (user.role === 'admin' || user.role === 'faculty') {
+    const isStaff = user.role === 'admin' || user.role === 'faculty' || user.role === 'principal';
+    const isPreview = isStaff && new URLSearchParams(window.location.search).get('preview') === '1';
+
+    if (isStaff && !isPreview) {
         window.location.href = '/admin';
         return;
     }
-    
+
+    if (isPreview) {
+        document.getElementById('previewBanner').classList.remove('hidden');
+        // Analytics here is per-student data the staff account doesn't have —
+        // and principal isn't even allowed to call that endpoint. Hide it.
+        const analyticsTab = document.getElementById('btnAnalyticsTab');
+        if (analyticsTab) analyticsTab.style.display = 'none';
+    }
+
     // Set user info in UI
     document.getElementById('welcomeMessage').textContent = `Hello, ${user.email.split('@')[0]}`;
     document.getElementById('userAvatar').textContent = user.email.charAt(0).toUpperCase();
-    
+
     const examGrid = document.getElementById('examGrid');
-    
+
     try {
         // Fetch all exams
         const response = await api.request('/exams');
-        const exams = Array.isArray(response) ? response : response.exams;
-        
+        let exams = Array.isArray(response) ? response : response.exams;
+
+        if (isPreview) {
+            // Staff calling /exams see every status in their college — filter
+            // down to exactly what a real student's request would return.
+            exams = exams.filter(e => e.status === 'published' || e.status === 'ongoing' || e.status === 'completed');
+        }
+
         if (exams.length === 0) {
             examGrid.innerHTML = '<p style="color: var(--text-muted)">No exams available at the moment.</p>';
             return;
@@ -37,7 +53,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Render exams
         examGrid.innerHTML = exams.map(exam => {
             const isUpcoming = exam.starts_at && exam.starts_at > now;
-            const isEarlyAccess = exam.starts_at && (exam.starts_at - now) <= 300 && (exam.starts_at - now) > 0;
+            const isEarlyAccess = exam.starts_at && (exam.starts_at - now) <= 600 && (exam.starts_at - now) > 0;
             const startsAtDate = exam.starts_at ? new Date(exam.starts_at * 1000).toLocaleString() : '';
             
             return `
@@ -72,7 +88,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         exams.forEach(exam => {
             const isUpcoming = exam.starts_at && exam.starts_at > now;
             if (isUpcoming) {
-                const msUntilEarlyAccess = (exam.starts_at - now - 300) * 1000;
+                const msUntilEarlyAccess = (exam.starts_at - now - 600) * 1000;
                 // Only set timeout if it reaches early access within next 24 hours to save memory
                 if (msUntilEarlyAccess > 0 && msUntilEarlyAccess < 24 * 60 * 60 * 1000) {
                     setTimeout(() => {
