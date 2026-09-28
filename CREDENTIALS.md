@@ -2,33 +2,32 @@
 
 This document contains authentication credentials, account roles, and infrastructure access details for the **QForge CBT Platform** (Local and Cloudflare Production environments).
 
+> **🔑 Unified Demo Password**: All demo accounts in both **Local** and **Remote (Production)** databases use the exact same password: **`demo12345`**.
+
 ---
 
-## 👥 User Accounts & Credentials
+## 👥 User Accounts & Credentials (Local & Remote)
 
-### 🌐 Cloudflare Remote / Production Accounts
-The following user accounts are provisioned in the Cloudflare D1 database (`cbt-platform`):
+All accounts share the standard password: **`demo12345`**
 
 | Role | Name | Login Email (ID) | Scope / Subject | Password | Notes |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Admin** | Platform Admin | `admin@cbt.local` | `global` | `change_me_in_production` *(or `AdminSecret@2026`)* | Full platform administration |
-| **Admin** | Platform Admin | `admin@example.com` | `global` | `change_me_in_production` | Secondary admin account |
-| **Principal** | Demo Principal | `principal@cbt.local` | `global` | `change_me_in_production` *(or `demo12345`)* | Exam review & publishing |
-| **Faculty** | Dr. Demo Faculty | `faculty@qforge-demo.edu` | `physics` (`ngi`) | `demo12345` *(or `FacultyPassword@123`)* | Demo College faculty |
-| **Faculty** | Physics Teacher | `teacher@cbt.local` | `physics` (`global`) | `demo12345` | Subject faculty |
-| **Faculty** | Physics Teacher | `faculty_physics@cbt.local`| `physics` (`global`) | `physics5_pass` *(or `demo12345`)* | Subject faculty |
-| **Student** | Demo Student | `student@qforge-demo.edu` | `ngi` | `demo1234` *(or `StudentPassword@123`)* | Demo Student (NGI) |
-| **Student** | Test Student | `student@cbt.local` | `global` | `demo1234` | Test Student |
-| **Student** | Test Student 1 | `student1@cbt.local` | `global` | `demo1234` | Test Student |
-
-> **Note on Passwords**: All hashed passwords in PBKDF2 WebCrypto format use standard demo passwords (`demo12345`, `demo1234`, `change_me_in_production`).
+| **Admin / Superuser** | Platform Admin | `admin@cbt.local` | `global` | `demo12345` | Full platform administration |
+| **Admin / Superuser** | Platform Admin | `admin@example.com` | `global` | `demo12345` | Secondary admin account |
+| **Principal / Admin** | Principal | `principal@cbt.local` | `global` | `demo12345` | Exam review & publishing |
+| **Faculty (Physics)** | Dr. Demo Faculty | `faculty@qforge-demo.edu` | `physics` (`ngi`) | `demo12345` | NGI Demo College faculty |
+| **Faculty (Physics)** | Physics Teacher | `teacher@cbt.local` | `physics` (`global`) | `demo12345` | Subject faculty |
+| **Faculty (Physics)** | Physics Teacher | `faculty_physics@cbt.local`| `physics` (`global`) | `demo12345` | Subject faculty |
+| **Student** | Demo Student | `student@qforge-demo.edu` | `ngi` | `demo12345` | NGI Demo Student |
+| **Student** | Test Student | `student@cbt.local` | `global` | `demo12345` | Test Student |
+| **Student** | Test Student 1 | `student1@cbt.local` | `global` | `demo12345` | Test Student |
 
 ---
 
 ## 🛠️ Multi-Tenant Access Control
 
 - **`college_id` Scoping**:
-  - `global`: Full system-level visibility (superadmins).
+  - `global`: Full system-level visibility (superadmins and system evaluators).
   - Specific College ID (e.g. `ngi`, `stepvista`): Restricts students and faculty to their respective college exams, question banks, and submissions.
 - **Faculty Subject Isolation**:
   - Faculty accounts can only manage questions and create exams matching their assigned `subject` (e.g., `physics`, `chemistry`, `mathematics`, `biology`).
