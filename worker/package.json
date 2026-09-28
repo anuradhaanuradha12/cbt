@@ -7,7 +7,14 @@
     "deploy": "wrangler deploy",
     "db:migrate": "wrangler d1 execute cbt-platform --file=src/db/schema.sql",
     "db:migrate:local": "wrangler d1 execute cbt-platform --local --file=src/db/schema.sql",
+    "db:migrate:002": "wrangler d1 execute cbt-platform --file=src/db/migrations/002_exam_approval_workflow.sql",
+    "db:migrate:002:local": "wrangler d1 execute cbt-platform --local --file=src/db/migrations/002_exam_approval_workflow.sql",
+    "db:migrate:003": "wrangler d1 execute cbt-platform --file=src/db/migrations/003_two_stage_workflow.sql",
+    "db:migrate:003:local": "wrangler d1 execute cbt-platform --local --file=src/db/migrations/003_two_stage_workflow.sql",
+    "db:migrate:007:local": "wrangler d1 execute cbt-platform --local --file=src/db/migrations/007_notification_task_completed.sql",
     "db:seed": "wrangler d1 execute cbt-platform --local --file=src/db/seed.sql",
+    "sync:figures": "node sync-figure-images.mjs",
+    "audit:figures": "node audit-figure-images.mjs",
     "types": "wrangler types"
   },
   "devDependencies": {
@@ -27,5 +34,8 @@
     "better-sqlite3@13.0.1": true,
     "sharp@0.35.3": true,
     "sharp@0.33.5": true
+  },
+  "dependencies": {
+    "jimp": "^1.6.1"
   }
 }

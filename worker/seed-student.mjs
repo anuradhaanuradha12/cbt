@@ -8,13 +8,13 @@ const NAME = 'Demo Student';
 const ROLE = 'student';
 const COLLEGE_ID = 'ngi'; // Must match the faculty's college_id so the student can see their exams
 const ITERATIONS = 100000;
-const KEYLEN = 64;
+const KEYLEN = 32; // bytes (worker derives 256 bits via WebCrypto — pbkdf2Sync's keylen is in bytes, not hex chars)
 const DIGEST = 'sha256';
 
 function generatePasswordHash(password) {
-  const salt = crypto.randomBytes(16).toString('hex');
+  const salt = crypto.randomBytes(16);
   const hash = crypto.pbkdf2Sync(password, salt, ITERATIONS, KEYLEN, DIGEST).toString('hex');
-  return `${salt}:${hash}`;
+  return `${salt.toString('hex')}:${hash}`;
 }
 
 const id = crypto.randomUUID();

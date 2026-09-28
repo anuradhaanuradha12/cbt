@@ -68,8 +68,8 @@
             border-radius: 9999px;
             font-size: 0.75rem;
             font-weight: 600;
-            background-color: rgba(59, 130, 246, 0.2);
-            color: var(--primary-light);
+            background-color: rgba(59, 130, 246, 0.12);
+            color: var(--primary);
             margin-bottom: 1rem;
         }
 
@@ -93,11 +93,11 @@
         }
 
         .tab-btn:hover {
-            color: var(--text);
+            color: var(--text-primary);
         }
 
         .tab-btn.active {
-            color: var(--primary-light);
+            color: var(--primary);
             border-bottom-color: var(--primary);
         }
 
@@ -120,8 +120,9 @@
         .stat-value {
             font-size: 2rem;
             font-weight: 700;
-            color: var(--primary-light);
+            color: var(--primary);
             margin-bottom: 0.5rem;
+            font-variant-numeric: tabular-nums;
         }
         .stat-label {
             color: var(--text-muted);
@@ -150,9 +151,9 @@
             border-bottom: 1px solid var(--border);
         }
         th {
-            background: rgba(0,0,0,0.2);
+            background: var(--bg-input);
             font-weight: 600;
-            color: var(--text-muted);
+            color: var(--text-secondary);
         }
     </style>
 <link href='https://fonts.googleapis.com/css2?family=Gabarito:wght@400;500;600;700&display=swap' rel='stylesheet'>
@@ -169,12 +170,16 @@
 </head>
 <body>
     <div class="dashboard-container">
+        <div id="previewBanner" class="hidden" style="margin-bottom: 1.5rem; padding: 0.875rem 1rem; background: rgba(88, 70, 246, 0.1); border: 1px solid rgba(88, 70, 246, 0.25); border-radius: var(--radius-md); color: var(--primary); font-size: 0.875rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem;">
+            <span>👁️ Preview Mode — this shows only what a student would actually see (published exams only). You can't attempt an exam from here.</span>
+            <a href="/admin" style="color: var(--primary); font-weight: 600; white-space: nowrap;">Back to Admin</a>
+        </div>
         <header class="header">
             <div class="logo">
                 <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
                 </svg>
-                <span>CBT Pro</span>
+                <span>CBT</span>
             </div>
             
             <div class="user-info">

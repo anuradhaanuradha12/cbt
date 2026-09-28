@@ -1,0 +1,1 @@
+fetch('http://127.0.0.1:8787/images/questions/6b7564bc-6c53-4507-b204-561690bb597c/8a65a2e580e66ff5972ccdacba4ee6b44653797f95301782ad820eb1da400357.webp').then(r => r.arrayBuffer()).then(b => console.log('Size:', b.byteLength)).catch(console.error);

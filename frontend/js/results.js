@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const urlParams = new URLSearchParams(window.location.search);
     const examId = urlParams.get('id');
     if (!examId) {
-        alert("No exam ID provided!");
+        await notify.alert("No exam ID provided!", { icon: 'error' });
         window.location.href = '/dashboard';
         return;
     }
@@ -56,7 +56,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             if (key === ans.correct_answer) style = 'color: var(--success); font-weight: bold;';
                             else if (key === ans.selected_answer && statusClass === 'wrong') style = 'color: var(--danger); text-decoration: line-through;';
                             
-                            optionsHtml += `<div style="margin-top: 0.5rem; ${style}"><strong>${key})</strong> ${val}</div>`;
+                            optionsHtml += `<div style="margin-top: 0.5rem; ${style}"><strong>${key})</strong> ${api.renderRichText(val)}</div>`;
                         }
                     }
                 }
@@ -68,8 +68,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                             ${statusText} (${ans.marks_awarded > 0 ? '+' : ''}${ans.marks_awarded} marks)
                         </span>
                     </div>
-                    <div class="whitespace-pre-wrap">${ans.question_text}</div>
-                    ${ans.image_r2_key ? `<img src="/images/${ans.image_r2_key}" class="mt-3 max-h-64 rounded border border-gray-300" alt="Question Image">` : ''}
+                    <div class="whitespace-pre-wrap">${api.renderRichText(ans.question_text)}</div>
+                    ${ans.image_r2_key ? `<img src="/images/${ans.image_r2_key}?v=${ans.updated_at ?? ''}" class="mt-3 max-h-64 rounded border border-gray-300" alt="Question Image" onerror="this.replaceWith(Object.assign(document.createElement('span'),{textContent:'[image unavailable — hard-refresh: Ctrl+Shift+R]',className:'text-xs text-gray-400'}))">` : ''}
                     <div style="margin-top: 1rem;">
                         ${optionsHtml}
                     </div>
@@ -80,7 +80,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     ${ans.explanation ? `
                         <div class="explanation whitespace-pre-wrap">
                             <strong>Explanation:</strong><br>
-                            ${ans.explanation}
+                            ${api.renderRichText(ans.explanation)}
                             ${ans.explanation_image_r2_key ? `<br><img src="/images/${ans.explanation_image_r2_key}" class="mt-3 max-h-48 rounded border border-gray-300" alt="Solution Image">` : ''}
                         </div>
                     ` : ''}

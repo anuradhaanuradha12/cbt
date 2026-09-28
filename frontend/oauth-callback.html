@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QForge - Signing in...</title>
+    <link href="https://fonts.googleapis.com/css2?family=Gabarito:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#5846f6">
+    <style>
+        .oauth-status {
+            margin-top: 1.5rem;
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+        .oauth-status.error { color: var(--danger); }
+        .spinner-lg {
+            width: 32px; height: 32px;
+            border: 3px solid rgba(88, 70, 246, 0.2);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-card" style="text-align:center;">
+            <div class="logo" style="justify-content:center;">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
+                </svg>
+                <span>CBT</span>
+            </div>
+            <h1 class="login-title" id="statusTitle">Signing you in…</h1>
+            <div class="spinner-lg" id="statusSpinner"></div>
+            <div class="oauth-status" id="statusText">Completing Google sign-in, please wait.</div>
+        </div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script>
+        (async () => {
+            const title = document.getElementById('statusTitle');
+            const text = document.getElementById('statusText');
+            const spinner = document.getElementById('statusSpinner');
+
+            const fail = (msg) => {
+                title.textContent = 'Sign-in failed';
+                spinner.classList.add('hidden');
+                text.classList.add('error');
+                text.textContent = msg;
+            };
+
+            const code = new URLSearchParams(window.location.search).get('code');
+            if (!code) return fail('Missing sign-in code. Close this tab and try again.');
+
+            try {
+                // Redeem the one-time code for the real session (worker deletes it after first use)
+                const res = await fetch(`${api.API_URL}/auth/google/exchange?code=${encodeURIComponent(code)}`);
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Exchange failed');
+
+                api.setToken(data.token);
+                localStorage.setItem('cbt_user', JSON.stringify(data.user));
+
+                title.textContent = 'Signed in!';
+                text.textContent = 'Redirecting…';
+
+                // Same role-based routing as password login
+                if (data.user.role === 'admin' || data.user.role === 'faculty' || data.user.role === 'principal') {
+                    window.location.href = '/admin';
+                } else {
+                    window.location.href = '/dashboard';
+                }
+            } catch (err) {
+                fail(err.message || 'Could not complete sign-in. Please try again.');
+            }
+        })();
+    </script>
+</body>
+</html>

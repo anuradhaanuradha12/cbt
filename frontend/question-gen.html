@@ -735,6 +735,10 @@
         });
       }
     </script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>window.QFORGE_THEME = 'dark';</script>
+    <script src="js/alerts.js?v=2"></script>
 </head>
 <body>
 
@@ -1592,7 +1596,7 @@ async function approveDraft() {
 
 async function rejectDraft() {
   if (!activeDraftId) return;
-  const reason = prompt('Reason for rejection (optional):') ?? '';
+  const reason = (await notify.prompt('Reason for rejection (optional):')) ?? '';
   const res = await apiFetch(`/forge/${activeDraftId}/reject`, { method: 'POST', body: { reason } });
   if (!res.ok) { toast('Rejection failed', 'error'); return; }
   toast('Draft rejected.', 'info');
@@ -1608,7 +1612,7 @@ async function quickApprove(id) {
 }
 
 async function quickReject(id) {
-  const reason = prompt('Reason (optional):') ?? '';
+  const reason = (await notify.prompt('Reason (optional):')) ?? '';
   const res = await apiFetch(`/forge/${id}/reject`, { method: 'POST', body: { reason } });
   if (!res.ok) { toast('Rejection failed', 'error'); return; }
   toast('Draft rejected.', 'info');
@@ -1616,14 +1620,14 @@ async function quickReject(id) {
 }
 
 // ── Discard ────────────────────────────────────────────────────────────────
-function discardDraft() {
-  if (!confirm('Discard this draft? (It will not be deleted from DB unless it was saved.)')) return;
+async function discardDraft() {
+  if (!(await notify.confirm('Discard this draft? (It will not be deleted from DB unless it was saved.)', { danger: true }))) return;
   updateStats(0, 0, 1);
   resetEditor();
 }
 
 async function quickDiscard(id) {
-  if (!confirm('Mark this draft as rejected?')) return;
+  if (!(await notify.confirm('Mark this draft as rejected?', { danger: true }))) return;
   const res = await apiFetch(`/forge/${id}/reject`, { method: 'POST', body: { reason: 'Discarded by user' } });
   if (!res.ok) { toast('Failed', 'error'); return; }
   toast('Discarded.', 'info');
