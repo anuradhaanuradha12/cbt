@@ -1,10 +1,4 @@
-// api.js - Central API configuration and utilities
-// Environment-aware: local dev server when served from localhost, deployed worker otherwise
-const API_URL = (() => {
-  const h = window.location.hostname;
-  if (h === 'localhost' || h === '127.0.0.1') return 'http://127.0.0.1:8787';
-  return 'https://cbt-worker.shishira-932.workers.dev';
-})();
+const API_URL = (typeof window !== 'undefined' && window.location?.origin) ? window.location.origin : 'http://127.0.0.1:8787';
 
 const api = {
     // Base URL of the Worker API (used e.g. to build the Google OAuth start URL)

@@ -1024,11 +1024,7 @@
 
 <script>
 // ── Config ─────────────────────────────────────────────────────────────────
-const API = (() => {
-  const h = window.location.hostname;
-  if (h === 'localhost' || h === '127.0.0.1') return 'http://127.0.0.1:8787';
-  return 'https://cbt-worker.shishira-932.workers.dev';
-})();
+const API = (typeof window !== 'undefined' && window.location?.origin) ? window.location.origin : 'http://127.0.0.1:8787';
 
 // ── State ──────────────────────────────────────────────────────────────────
 let token   = localStorage.getItem('qforge_token') || '';
