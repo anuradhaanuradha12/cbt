@@ -1,5 +1,5 @@
 {
-  "name": "cbt-worker",
+  "name": "qforge",
   "version": "1.0.0",
   "private": true,
   "scripts": {
@@ -13,8 +13,6 @@
     "db:migrate:003:local": "wrangler d1 execute cbt-platform --local --file=src/db/migrations/003_two_stage_workflow.sql",
     "db:migrate:007:local": "wrangler d1 execute cbt-platform --local --file=src/db/migrations/007_notification_task_completed.sql",
     "db:seed": "wrangler d1 execute cbt-platform --local --file=src/db/seed.sql",
-    "sync:figures": "node sync-figure-images.mjs",
-    "audit:figures": "node audit-figure-images.mjs",
     "types": "wrangler types"
   },
   "devDependencies": {
