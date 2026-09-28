@@ -1,0 +1,51 @@
+name = "qforge"
+main = "src/index.ts"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
+
+# ── D1 Database (Scraped Questions Bank) ──────────────────────
+[[d1_databases]]
+binding = "DB"
+database_name = "cbt-platform"
+database_id = "220c5793-3f10-460a-b5fc-8f3223feee43"
+
+# ── D1 Database (Proprietary Question Forge) ──────────────────
+[[d1_databases]]
+binding = "QFORGE_DB"
+database_name = "cbt-qforge"
+database_id = "bbe7c7a4-acbf-42c3-ba60-17e34e5bf9bb"
+
+# ── KV Namespace ───────────────────────────────────────────────
+[[kv_namespaces]]
+binding = "CBT_KV"
+id = "9ceb8c5eef2541fcbc7485301a4b23b0"
+
+# ── R2 Bucket ─────────────────────────────────────────────────
+[[r2_buckets]]
+binding = "CBT_R2"
+bucket_name = "cbt-media"
+
+# ── Vars (non-secret) ─────────────────────────────────────────
+[vars]
+PLATFORM_NAME = "QForge"
+
+# ── Secrets (set via `wrangler secret put`) ──────────────────
+# JWT_SECRET is NOT stored here — set it with:
+#   wrangler secret put JWT_SECRET
+# GEMINI_API_KEY is NOT stored here — set it with:
+#   wrangler secret put GEMINI_API_KEY
+
+# ── Dev overrides ─────────────────────────────────────────────
+[dev]
+port = 8787
+local_protocol = "http"
+
+# ── Triggers ──────────────────────────────────────────────────
+[triggers]
+crons = ["0 0 * * SUN"] # Run every Sunday at midnight
+
+# ── Static Assets ─────────────────────────────────────────────
+[assets]
+directory = "../frontend"
+binding = "ASSETS"
+

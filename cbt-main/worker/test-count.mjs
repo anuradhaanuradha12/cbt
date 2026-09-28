@@ -1,0 +1,19 @@
+import Database from 'better-sqlite3';
+const db = new Database('.wrangler/state/v3/d1/miniflare-D1DatabaseObject/82ed3d9ff502f7382874778df6ecb14db42da56def327314e2a27be609632375.sqlite');
+
+const rows = db.prepare(`SELECT count(*) as c FROM questions WHERE image_r2_key IS NOT NULL OR explanation_image_r2_key IS NOT NULL`).get();
+console.log('Total with images:', rows.c);
+
+const pyqs = db.prepare(`
+  SELECT count(*) as c FROM questions 
+  WHERE (image_r2_key IS NOT NULL OR explanation_image_r2_key IS NOT NULL)
+  AND (
+    question_text LIKE '%201%' OR question_text LIKE '%202%' OR question_text LIKE '%200%' OR question_text LIKE '%199%'
+    OR explanation LIKE '%201%' OR explanation LIKE '%202%' OR explanation LIKE '%200%' OR explanation LIKE '%199%'
+    OR question_text LIKE '%JEE%' OR explanation LIKE '%JEE%'
+    OR question_text LIKE '%NEET%' OR explanation LIKE '%NEET%'
+    OR question_text LIKE '%AIPMT%' OR explanation LIKE '%AIPMT%'
+    OR question_text LIKE '%KCET%' OR explanation LIKE '%KCET%'
+  )
+`).get();
+console.log('PYQs with images (heuristic):', pyqs.c);

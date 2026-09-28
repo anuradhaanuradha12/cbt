@@ -1,0 +1,9 @@
+UPDATE users SET password_hash = '90fa10d80c3b36b873b69009a12ba762:8a3ee88770fdff531de0f87360551ac5ac2c306f95f53e8554ca8ccc2e144437' WHERE email = 'teacher@cbt.local';
+UPDATE users SET password_hash = '1e031fee8c0d9b526c57130ee499c749:da14fe70bd7b11c2acf8c70a32f4289d425b2e1d0bf5ec8d7b2d35f9b6643c7b' WHERE email = 'faculty_physics@cbt.local';
+UPDATE users SET password_hash = '2966a6bc5fe06f4bef8df7ba91d3c1a5:8da8e73c924dcc44b0f0cf7a07335431c20378c128648a44b2061a3fb4db94a5' WHERE email = 'faculty@qforge-demo.edu';
+UPDATE users SET password_hash = '0a9a359cff4b36fd1560f930228dc174:c323089e5046dc314256c73ff05fb0e698b92bfb3fbdaa4b10dc940059108680' WHERE email = 'faculty@example.com';
+UPDATE users SET password_hash = '83f474ab1f5ccaafd3726f83f92ad484:61747440fedf8f4838a8fba4acf9b1eb0c41b1a65b8fe46c83f0957363b04386' WHERE email = 'faculty2@example.com';
+UPDATE users SET password_hash = 'b88cb9d1f3ddfbb133e33e4d6c52fb3e:75467822a7aa46d4d10d017fb922830a2eea1efe90ab5e319dee684fe9f5fdfd' WHERE email = 'biology@cbt.local';
+UPDATE users SET password_hash = '58432d5daa2b5e1b446132508224e11f:392f1ea1eee99a19f079f716e07fa761a0934ee3415d0fe700c73f2865d11b68' WHERE email = 'maths@cbt.local';
+UPDATE users SET password_hash = '426c0bc4e0eb27371a04b7c9fdd35e29:d124ec861b467aa346fa96da40527ebbaf430ce0b21ce3015c0b39ce7921b9d0' WHERE email = 'physics@cbt.local';
+UPDATE users SET password_hash = 'a581be6119c01c921c4e1ea98c168262:dfce8834adce5a599f6f1bc436875f8b3c0897b349287be37650f14ee6447477' WHERE email = 'chemistry@cbt.local';

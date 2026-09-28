@@ -1,0 +1,37 @@
+# Dependencies
+node_modules/
+dist/
+.wrangler/
+
+# Wrangler local state
+.dev.vars
+
+# Environment secrets — NEVER commit these
+.env
+.env.local
+.env.*.local
+
+# Build outputs
+*.js.map
+*.d.ts
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/settings.json
+.idea/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Migration scripts
+worker/download_hf.py
+worker/import-questions-local.mjs
+worker/import-questions.mjs
+worker/migrate-images.ts
+worker/restore-text.mjs
+
+INTERNAL_README.md

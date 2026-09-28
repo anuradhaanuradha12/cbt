@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QForge - Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .dashboard-container {
+            padding: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: var(--primary);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+
+        .exam-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .exam-card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 1.5rem;
+            transition: all 0.2s ease;
+        }
+
+        .exam-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--border-focus);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            background-color: rgba(59, 130, 246, 0.12);
+            color: var(--primary);
+            margin-bottom: 1rem;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 1rem;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 2rem;
+        }
+
+        .tab-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s ease;
+        }
+
+        .tab-btn:hover {
+            color: var(--text-primary);
+        }
+
+        .tab-btn.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+
+        .tab-pane {
+            display: none;
+        }
+
+        .tab-pane.active {
+            display: block;
+        }
+
+        /* Analytics Styles */
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 1.5rem;
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+            font-variant-numeric: tabular-nums;
+        }
+        .stat-label {
+            color: var(--text-muted);
+            font-size: 0.875rem;
+        }
+        .analytics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .table-container {
+            overflow-x: auto;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            margin-bottom: 2rem;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+        th {
+            background: var(--bg-input);
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+    </style>
+<link href='https://fonts.googleapis.com/css2?family=Gabarito:wght@400;500;600;700&display=swap' rel='stylesheet'>
+
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#5846f6">
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('sw.js');
+        });
+      }
+    </script>
+</head>
+<body>
+    <div class="dashboard-container">
+        <div id="previewBanner" class="hidden" style="margin-bottom: 1.5rem; padding: 0.875rem 1rem; background: rgba(88, 70, 246, 0.1); border: 1px solid rgba(88, 70, 246, 0.25); border-radius: var(--radius-md); color: var(--primary); font-size: 0.875rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem;">
+            <span>👁️ Preview Mode — this shows only what a student would actually see (published exams only). You can't attempt an exam from here.</span>
+            <a href="/admin" style="color: var(--primary); font-weight: 600; white-space: nowrap;">Back to Admin</a>
+        </div>
+        <header class="header">
+            <div class="logo">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
+                </svg>
+                <span>CBT</span>
+            </div>
+            
+            <div class="user-info">
+                <div id="welcomeMessage">Loading...</div>
+                <div class="avatar" id="userAvatar">?</div>
+                <button onclick="api.logout()" style="padding: 0.5rem 1rem; margin-top: 0; background: transparent; border: 1px solid var(--border); border-radius: var(--radius-md); font-weight: 500; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.backgroundColor='var(--bg-input)'; this.style.color='var(--danger)'" onmouseout="this.style.backgroundColor='transparent'; this.style.color='var(--text-primary)'">Logout</button>
+            </div>
+        </header>
+
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="exams">Available Exams</button>
+            <button class="tab-btn" data-tab="analytics" id="btnAnalyticsTab">My Analytics</button>
+        </div>
+
+        <div id="tab-exams" class="tab-pane active">
+            <h2>Available Exams</h2>
+            <p class="login-subtitle">Select an exam to begin your session.</p>
+            <div class="exam-grid" id="examGrid">
+                <!-- Exams will be populated here -->
+            </div>
+        </div>
+
+        <div id="tab-analytics" class="tab-pane">
+            <h2>Performance Analytics</h2>
+            <p class="login-subtitle mb-6">Track your strengths and identify weak chapters.</p>
+            
+            <div id="analyticsLoading" class="text-center py-8 text-gray-600">Loading analytics...</div>
+            <div id="analyticsContent" style="display: none;">
+                
+                <h3 class="text-lg font-semibold mb-4 text-gray-900">Overall Stats</h3>
+                <div class="analytics-grid" id="overallStatsGrid">
+                    <!-- Stats populated here -->
+                </div>
+
+                <h3 class="text-lg font-semibold mb-4 mt-8 text-gray-900">Subject Performance</h3>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Subject</th>
+                                <th>Attempted</th>
+                                <th>Correct</th>
+                                <th>Wrong</th>
+                                <th>Accuracy</th>
+                            </tr>
+                        </thead>
+                        <tbody id="subjectTableBody">
+                            <!-- Rows -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <h3 class="text-lg font-semibold mb-4 mt-8 text-gray-900">Chapter Analysis (Weaknesses)</h3>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Chapter</th>
+                                <th>Subject</th>
+                                <th>Attempted</th>
+                                <th>Correct</th>
+                                <th>Wrong</th>
+                                <th>Accuracy</th>
+                            </tr>
+                        </thead>
+                        <tbody id="chapterTableBody">
+                            <!-- Rows -->
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/dashboard.js"></script>
+</body>
+</html>
+
+
