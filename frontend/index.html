@@ -3,337 +3,801 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CBT - Sign in</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <title>QForge CBT — Next-Gen Assessment Platform</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#7c3aed">
+    <meta name="theme-color" content="#090d16">
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        html, body { height: 100%; }
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            color: #ffffff;
-            background:
-                radial-gradient(circle at 88% 4%, rgba(255,255,255,0.5) 0, rgba(255,255,255,0) 9%),
-                radial-gradient(circle at 97% 88%, rgba(56,189,248,0.95) 0, rgba(56,189,248,0) 42%),
-                radial-gradient(circle at 0% 108%, rgba(236,72,153,0.9) 0, rgba(236,72,153,0) 46%),
-                linear-gradient(120deg, #8b2fc9 0%, #a934e0 30%, #c445ec 58%, #8f5cf7 100%);
-            overflow-x: hidden;
+        :root {
+            --bg-deep: #090d16;
+            --bg-card: rgba(17, 24, 39, 0.72);
+            --bg-card-hover: rgba(24, 32, 52, 0.85);
+            --border-glass: rgba(255, 255, 255, 0.08);
+            --border-focus: rgba(99, 102, 241, 0.5);
+            --primary: #6366f1;
+            --primary-glow: rgba(99, 102, 241, 0.28);
+            --accent-cyan: #06b6d4;
+            --accent-emerald: #10b981;
+            --text-main: #f8fafc;
+            --text-sub: #94a3b8;
+            --text-muted: #64748b;
+            --radius-lg: 20px;
+            --radius-md: 12px;
+            --radius-sm: 8px;
         }
 
-        .page {
-            position: relative;
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, sans-serif;
+            background-color: var(--bg-deep);
+            color: var(--text-main);
             min-height: 100vh;
             display: flex;
             flex-direction: column;
-            padding: clamp(1.25rem, 3vw, 2.75rem) clamp(1.5rem, 6vw, 5.5rem);
+            overflow-x: hidden;
+            position: relative;
         }
 
-        /* decorative blobs */
-        .blob {
+        /* ── Ambient Background Canvas ─────────────────── */
+        .ambient-canvas {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+            overflow: hidden;
+        }
+        .glow-orb {
             position: absolute;
             border-radius: 50%;
-            pointer-events: none;
+            filter: blur(100px);
+            opacity: 0.45;
+            animation: floatOrb 18s ease-in-out infinite alternate;
         }
-        .blob-1 {
-            top: -22%;
-            right: -8%;
-            width: 34vw;
-            height: 34vw;
-            background: rgba(255, 255, 255, 0.14);
+        .glow-orb-1 {
+            top: -10%;
+            left: 15%;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, #4f46e5 0%, rgba(79, 70, 229, 0) 70%);
         }
-        .blob-2 {
-            bottom: -34%;
-            left: -12%;
-            width: 52vw;
-            height: 52vw;
-            background: rgba(255, 255, 255, 0.10);
+        .glow-orb-2 {
+            bottom: -15%;
+            right: 10%;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, #0284c7 0%, rgba(2, 132, 199, 0) 70%);
+            animation-duration: 22s;
+        }
+        .glow-orb-3 {
+            top: 40%;
+            left: 45%;
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, #9333ea 0%, rgba(147, 51, 234, 0) 70%);
+            opacity: 0.25;
+            animation-duration: 26s;
+        }
+        .grid-overlay {
+            position: absolute;
+            inset: 0;
+            background-image: 
+                linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+            background-size: 48px 48px;
+            mask-image: radial-gradient(circle at center, black 40%, transparent 85%);
         }
 
-        /* ── logo ──────────────────────────────────────────── */
+        @keyframes floatOrb {
+            0% { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(40px, 30px) scale(1.08); }
+        }
+
+        /* ── Container Layout ─────────────────────────── */
+        .page-wrapper {
+            position: relative;
+            z-index: 1;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: clamp(1.2rem, 3vw, 2.5rem) clamp(1.5rem, 5vw, 4.5rem);
+            max-width: 1440px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        /* ── Navigation / Header ───────────────────────── */
+        .navbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: clamp(2rem, 4vh, 3.5rem);
+        }
         .brand-logo {
             display: flex;
             align-items: center;
-            gap: 0.7rem;
-            font-size: 1.5rem;
-            font-weight: 800;
-            letter-spacing: 0.01em;
-            z-index: 2;
+            gap: 0.75rem;
+            text-decoration: none;
+            color: #fff;
         }
-        .brand-logo svg { width: 36px; height: 36px; }
-
-        /* ── main row ──────────────────────────────────────── */
-        .main-row {
-            flex: 1;
+        .logo-icon {
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #6366f1, #a855f7);
             display: flex;
             align-items: center;
-            gap: clamp(2rem, 5vw, 5rem);
-            z-index: 1;
-            padding-top: clamp(1rem, 3vh, 2rem);
+            justify-content: center;
+            box-shadow: 0 8px 20px var(--primary-glow);
+        }
+        .logo-icon svg { width: 22px; height: 22px; color: #fff; }
+        .logo-text {
+            font-size: 1.35rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            background: linear-gradient(135deg, #ffffff 40%, #94a3b8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .logo-badge {
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 0.2rem 0.55rem;
+            border-radius: 20px;
+            background: rgba(99, 102, 241, 0.15);
+            border: 1px solid rgba(99, 102, 241, 0.35);
+            color: #a5b4fc;
         }
 
-        .brand-content { flex: 1 1 55%; max-width: 560px; }
-        .brand-title {
-            font-size: clamp(2.2rem, 4vw, 3.4rem);
-            font-weight: 800;
-            line-height: 1.1;
-            letter-spacing: -0.02em;
-            margin-bottom: 1.1rem;
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--accent-emerald);
+            background: rgba(16, 185, 129, 0.08);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            padding: 0.4rem 0.85rem;
+            border-radius: 30px;
         }
-        .brand-sub {
-            font-size: clamp(1rem, 1.3vw, 1.2rem);
-            line-height: 1.55;
-            color: rgba(255, 255, 255, 0.92);
-            max-width: 24rem;
-            margin-bottom: clamp(1.8rem, 4vh, 3.2rem);
+        .status-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--accent-emerald);
+            box-shadow: 0 0 10px var(--accent-emerald);
+            animation: pulse 2s infinite;
         }
-        .feature-list {
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(0.85); }
+        }
+
+        /* ── Main Content Grid ────────────────────────── */
+        .hero-section {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 1.15fr 0.85fr;
+            gap: clamp(2.5rem, 5vw, 5rem);
+            align-items: center;
+        }
+
+        /* ── Left Column: Value Prop ──────────────────── */
+        .hero-content {
             display: flex;
             flex-direction: column;
-            gap: clamp(1.1rem, 2.6vh, 1.9rem);
-            list-style: none;
+            gap: 1.8rem;
         }
-        .feature-list li { display: flex; align-items: center; gap: 1.1rem; }
-        .feature-icon {
-            width: 52px;
-            height: 52px;
-            flex-shrink: 0;
-            border-radius: 50%;
+        .hero-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #818cf8;
+            background: rgba(99, 102, 241, 0.1);
+            border: 1px solid rgba(99, 102, 241, 0.25);
+            padding: 0.4rem 0.9rem;
+            border-radius: 20px;
+            width: fit-content;
+        }
+        .hero-heading {
+            font-size: clamp(2.4rem, 4.2vw, 3.8rem);
+            font-weight: 800;
+            line-height: 1.12;
+            letter-spacing: -0.03em;
+            color: #ffffff;
+        }
+        .hero-heading span.gradient-text {
+            background: linear-gradient(135deg, #818cf8 0%, #c084fc 50%, #38bdf8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .hero-desc {
+            font-size: 1.08rem;
+            line-height: 1.6;
+            color: var(--text-sub);
+            max-width: 520px;
+        }
+
+        /* Feature Cards Grid */
+        .feature-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-top: 0.5rem;
+        }
+        .feature-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-glass);
+            border-radius: var(--radius-md);
+            padding: 1.1rem 1.25rem;
+            backdrop-filter: blur(16px);
+            transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+        }
+        .feature-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(99, 102, 241, 0.3);
+            background: var(--bg-card-hover);
+        }
+        .feature-icon-box {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
-            background: rgba(255, 255, 255, 0.22);
-            backdrop-filter: blur(4px);
+            margin-bottom: 0.75rem;
         }
-        .feature-icon svg { width: 23px; height: 23px; }
-        .feature-text strong { display: block; font-size: 1.08rem; font-weight: 700; }
-        .feature-text span { font-size: 0.9rem; color: rgba(255, 255, 255, 0.85); }
-
-        /* ── login card (floats on the gradient, right side) ── */
-        .login-card {
-            flex: 0 1 430px;
-            background: #ffffff;
-            color: #18181b;
-            width: 100%;
-            max-width: 430px;
-            border-radius: 20px;
-            padding: clamp(1.9rem, 3vw, 2.6rem);
-            box-shadow: 0 24px 60px rgba(43, 8, 79, 0.35);
+        .icon-blue { background: rgba(56, 189, 248, 0.12); color: #38bdf8; }
+        .icon-purple { background: rgba(168, 85, 247, 0.12); color: #c084fc; }
+        .icon-green { background: rgba(16, 185, 129, 0.12); color: #34d399; }
+        .icon-amber { background: rgba(245, 158, 11, 0.12); color: #fbbf24; }
+        .feature-icon-box svg { width: 20px; height: 20px; }
+        
+        .feature-card h4 {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: #f1f5f9;
+            margin-bottom: 0.25rem;
         }
-        .login-title { font-size: 1.65rem; font-weight: 800; color: #18181b; margin-bottom: 0.4rem; letter-spacing: -0.01em; }
-        .login-subtitle { font-size: 0.93rem; color: #71717a; margin-bottom: 1.7rem; }
+        .feature-card p {
+            font-size: 0.82rem;
+            color: var(--text-muted);
+            line-height: 1.45;
+        }
 
-        .form-group { margin-bottom: 1.15rem; }
-        .form-group label {
-            display: block;
-            font-size: 0.88rem;
+        /* ── Right Column: Sign In Card ────────────────── */
+        .auth-card-container {
+            position: relative;
+        }
+        .auth-card-container::before {
+            content: '';
+            position: absolute;
+            inset: -1px;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.4), rgba(56, 189, 248, 0.1), rgba(255, 255, 255, 0.05));
+            border-radius: calc(var(--radius-lg) + 1px);
+            z-index: 0;
+        }
+        .auth-card {
+            position: relative;
+            z-index: 1;
+            background: rgba(15, 23, 42, 0.88);
+            backdrop-filter: blur(24px);
+            border-radius: var(--radius-lg);
+            padding: clamp(2rem, 3.5vw, 2.6rem);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6), 0 0 40px rgba(99, 102, 241, 0.1);
+        }
+
+        .auth-header {
+            margin-bottom: 1.5rem;
+        }
+        .auth-title {
+            font-size: 1.6rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            color: #ffffff;
+            margin-bottom: 0.35rem;
+        }
+        .auth-subtitle {
+            font-size: 0.9rem;
+            color: var(--text-sub);
+        }
+
+        /* One-Click Role Selector Pills */
+        .demo-roles-section {
+            margin-bottom: 1.4rem;
+            padding: 0.9rem;
+            background: rgba(30, 41, 59, 0.5);
+            border: 1px dashed rgba(255, 255, 255, 0.12);
+            border-radius: var(--radius-md);
+        }
+        .demo-roles-label {
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: #94a3b8;
+            margin-bottom: 0.6rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .demo-pills {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.5rem;
+        }
+        .demo-pill {
+            background: rgba(15, 23, 42, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: var(--radius-sm);
+            padding: 0.45rem 0.4rem;
+            font-size: 0.78rem;
             font-weight: 600;
-            color: #3f3f46;
+            color: #e2e8f0;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.15rem;
+        }
+        .demo-pill span.pill-sub {
+            font-size: 0.65rem;
+            font-weight: 500;
+            color: var(--text-muted);
+        }
+        .demo-pill:hover {
+            border-color: #818cf8;
+            background: rgba(99, 102, 241, 0.18);
+            transform: translateY(-1px);
+        }
+        .demo-pill.active {
+            border-color: #6366f1;
+            background: rgba(99, 102, 241, 0.25);
+            color: #ffffff;
+            box-shadow: 0 0 12px rgba(99, 102, 241, 0.3);
+        }
+
+        /* Form Inputs */
+        .form-group {
+            margin-bottom: 1.15rem;
+        }
+        .form-label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #cbd5e1;
             margin-bottom: 0.45rem;
         }
-        .input-wrap { position: relative; }
-        .input-wrap .lead-icon {
+        .input-box {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        .input-icon {
             position: absolute;
-            left: 0.9rem;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 17px; height: 17px;
-            color: #a1a1aa;
+            left: 1rem;
+            width: 18px;
+            height: 18px;
+            color: #64748b;
             pointer-events: none;
+            transition: color 0.15s ease;
         }
-        .input-wrap input {
+        .form-input {
             width: 100%;
-            padding: 0.78rem 2.7rem 0.78rem 2.6rem;
-            font: inherit;
-            font-size: 0.95rem;
-            color: #18181b;
-            background: #ffffff;
-            border: 1px solid #e4e4e7;
-            border-radius: 11px;
-            transition: border-color 0.15s, box-shadow 0.15s;
-        }
-        .input-wrap input::placeholder { color: #b6b6bf; }
-        .input-wrap input:focus {
+            padding: 0.8rem 2.8rem 0.8rem 2.75rem;
+            font-family: inherit;
+            font-size: 0.94rem;
+            color: #ffffff;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: var(--radius-md);
             outline: none;
-            border-color: #8b5cf6;
-            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.16);
+            transition: all 0.2s ease;
         }
-        .eye-btn {
+        .form-input::placeholder {
+            color: #475569;
+        }
+        .form-input:focus {
+            border-color: #6366f1;
+            background: rgba(15, 23, 42, 0.9);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+        }
+        .form-input:focus + .input-icon,
+        .input-box:focus-within .input-icon {
+            color: #818cf8;
+        }
+
+        .eye-toggle {
             position: absolute;
-            right: 0.55rem;
-            top: 50%;
-            transform: translateY(-50%);
+            right: 0.75rem;
+            background: none;
+            border: none;
+            color: #64748b;
+            cursor: pointer;
+            padding: 0.35rem;
             display: flex;
             align-items: center;
             justify-content: center;
-            width: 34px; height: 34px;
-            border: none;
-            background: none;
-            color: #a1a1aa;
-            border-radius: 8px;
-            cursor: pointer;
+            border-radius: var(--radius-sm);
+            transition: color 0.15s ease;
         }
-        .eye-btn:hover { color: #52525b; }
-        .eye-btn svg { width: 19px; height: 19px; }
+        .eye-toggle:hover { color: #cbd5e1; }
+        .eye-toggle svg { width: 18px; height: 18px; }
 
-        .btn-signin {
+        /* Submit Button */
+        .btn-submit {
             width: 100%;
-            margin-top: 0.5rem;
-            padding: 0.85rem 1rem;
-            font: inherit;
-            font-size: 1rem;
+            margin-top: 0.75rem;
+            padding: 0.88rem 1.25rem;
+            font-family: inherit;
+            font-size: 0.98rem;
             font-weight: 700;
             color: #ffffff;
             border: none;
-            border-radius: 12px;
+            border-radius: var(--radius-md);
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            box-shadow: 0 4px 20px rgba(99, 102, 241, 0.35);
             cursor: pointer;
-            background: linear-gradient(90deg, #7c3aed, #d946ef);
-            transition: filter 0.15s, transform 0.05s;
             display: flex;
             align-items: center;
             justify-content: center;
+            gap: 0.6rem;
+            transition: all 0.2s ease;
         }
-        .btn-signin:hover { filter: brightness(1.08); }
-        .btn-signin:active { transform: translateY(1px); }
-        .btn-signin:disabled { opacity: 0.65; cursor: not-allowed; }
-        .btn-loader.hidden { display: none; }
-        .btn-loader {
-            width: 17px; height: 17px;
-            margin-left: 0.6rem;
-            border: 2px solid rgba(255,255,255,0.45);
+        .btn-submit:hover {
+            filter: brightness(1.1);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 24px rgba(99, 102, 241, 0.5);
+        }
+        .btn-submit:active {
+            transform: translateY(1px);
+        }
+        .btn-submit:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .spinner {
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(255, 255, 255, 0.35);
             border-top-color: #ffffff;
             border-radius: 50%;
             animation: spin 0.7s linear infinite;
         }
+        .spinner.hidden { display: none; }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        .row-between {
+        /* OAuth SSO Button */
+        .oauth-divider {
             display: flex;
             align-items: center;
-            justify-content: space-between;
+            gap: 0.75rem;
+            margin: 1.2rem 0;
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .oauth-divider::before,
+        .oauth-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .btn-google {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            font-family: inherit;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #e2e8f0;
+            background: rgba(30, 41, 59, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.65rem;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+        .btn-google:hover {
+            background: rgba(51, 65, 85, 0.8);
+            border-color: rgba(255, 255, 255, 0.2);
+            color: #ffffff;
+        }
+        .btn-google svg { width: 18px; height: 18px; }
+
+        /* Error Box */
+        .error-alert {
             margin-top: 1rem;
-            font-size: 0.87rem;
+            padding: 0.75rem 1rem;
+            background: rgba(239, 68, 68, 0.12);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: var(--radius-md);
+            color: #fca5a5;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            animation: fadeIn 0.2s ease;
         }
-        .remember { display: flex; align-items: center; gap: 0.5rem; color: #52525b; cursor: pointer; }
-        .remember input { width: 15px; height: 15px; accent-color: #7c3aed; cursor: pointer; }
-        .forgot { color: #7c3aed; font-weight: 600; text-decoration: none; }
-        .forgot:hover { text-decoration: underline; }
+        .error-alert.hidden { display: none; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
 
-        .login-footer { margin-top: 1.6rem; text-align: center; font-size: 0.89rem; color: #71717a; }
-        .login-footer a { color: #7c3aed; font-weight: 700; text-decoration: none; }
-        .login-footer a:hover { text-decoration: underline; }
-
-        .error-box {
-            margin-top: 1rem;
-            padding: 0.7rem 0.9rem;
-            font-size: 0.86rem;
-            color: #b91c1c;
-            background: #fef2f2;
-            border: 1px solid #fecaca;
-            border-radius: 10px;
+        /* Footer info */
+        .auth-card-footer {
+            margin-top: 1.4rem;
+            text-align: center;
+            font-size: 0.8rem;
+            color: var(--text-muted);
         }
-        .error-box.hidden { display: none; }
-
-        @media (max-width: 900px) {
-            .main-row { flex-direction: column; align-items: stretch; justify-content: flex-start; gap: 2rem; }
-            .brand-content { max-width: none; }
-            .login-card { flex: none; max-width: none; margin: 0 auto 1rem; }
+        .auth-card-footer a {
+            color: #818cf8;
+            text-decoration: none;
+            font-weight: 600;
         }
-        @media (prefers-reduced-motion: reduce) {
-            .btn-signin, input { transition: none; }
+        .auth-card-footer a:hover { text-decoration: underline; }
+
+        /* Responsive Breakpoints */
+        @media (max-width: 1024px) {
+            .hero-section {
+                grid-template-columns: 1fr;
+                gap: 3rem;
+            }
+            .hero-content {
+                text-align: center;
+                align-items: center;
+            }
+            .hero-desc { max-width: 600px; }
+            .feature-grid { max-width: 580px; width: 100%; }
+            .auth-card-container { max-width: 480px; width: 100%; margin: 0 auto; }
+        }
+
+        @media (max-width: 640px) {
+            .feature-grid { grid-template-columns: 1fr; }
+            .page-wrapper { padding: 1.2rem 1rem; }
+            .auth-card { padding: 1.6rem 1.2rem; }
+            .demo-pills { grid-template-columns: 1fr; }
         }
     </style>
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('sw.js');
+          navigator.serviceWorker.register('sw.js').catch(() => {});
         });
       }
     </script>
 </head>
 <body>
-    <div class="page">
-        <div class="blob blob-1"></div>
-        <div class="blob blob-2"></div>
+    <div class="ambient-canvas">
+        <div class="glow-orb glow-orb-1"></div>
+        <div class="glow-orb glow-orb-2"></div>
+        <div class="glow-orb glow-orb-3"></div>
+        <div class="grid-overlay"></div>
+    </div>
 
-        <!-- ── logo ─────────────────────────────────────── -->
-        <div class="brand-logo">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
-            </svg>
-            <span>CBT</span>
-        </div>
+    <div class="page-wrapper">
+        <!-- ── Navigation ────────────────────────────── -->
+        <header class="navbar">
+            <a href="/" class="brand-logo">
+                <div class="logo-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+                        <polyline points="2 17 12 22 22 17"></polyline>
+                        <polyline points="2 12 12 17 22 12"></polyline>
+                    </svg>
+                </div>
+                <div>
+                    <span class="logo-text">QForge CBT</span>
+                </div>
+                <span class="logo-badge">Edge 2.0</span>
+            </a>
 
-        <div class="main-row">
-            <!-- ── left: brand ──────────────────────────── -->
-            <div class="brand-content">
-                <h1 class="brand-title">Learn Today,<br>Build Tomorrow</h1>
-                <p class="brand-sub">Your online assessment platform for a better future.</p>
-                <ul class="feature-list">
-                    <li>
-                        <span class="feature-icon">
-                            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 4.5 13.5H11L9.5 22 19 10h-6.5L13 2z"/></svg>
-                        </span>
-                        <span class="feature-text"><strong>Take Tests</strong><span>Practice anytime, anywhere</span></span>
-                    </li>
-                    <li>
-                        <span class="feature-icon">
-                            <svg viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="12" width="3.4" height="8" rx="1"/><rect x="10.3" y="7" width="3.4" height="13" rx="1"/><rect x="16.6" y="3" width="3.4" height="17" rx="1"/></svg>
-                        </span>
-                        <span class="feature-text"><strong>Track Progress</strong><span>Monitor your performance</span></span>
-                    </li>
-                    <li>
-                        <span class="feature-icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M12 2.8l2.9 5.9 6.5.9-4.7 4.6 1.1 6.4L12 17.6l-5.8 3 1.1-6.4L2.6 9.6l6.5-.9L12 2.8z"/></svg>
-                        </span>
-                        <span class="feature-text"><strong>Achieve More</strong><span>Build your dream career</span></span>
-                    </li>
-                </ul>
+            <div class="status-pill">
+                <span class="status-dot"></span>
+                <span>Cloudflare Edge Active</span>
             </div>
+        </header>
 
-            <!-- ── right: sign-in card ──────────────────── -->
-            <div class="login-card">
-                <h2 class="login-title">Welcome back</h2>
-                <p class="login-subtitle">Sign in to your account to continue</p>
+        <!-- ── Hero & Login Grid ──────────────────────── -->
+        <main class="hero-section">
+            <!-- Left: Value Prop & Stats -->
+            <div class="hero-content">
+                <div class="hero-tag">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>
+                    Enterprise Entrance Exam Platform
+                </div>
 
-                <form id="loginForm" class="login-form" novalidate>
-                    <div class="form-group">
-                        <label for="email">Email</label>
-                        <div class="input-wrap">
-                            <svg class="lead-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5.5" width="18" height="13" rx="2.5"/><path d="m4 7 8 6 8-6"/></svg>
-                            <input type="email" id="email" placeholder="admin@example.com" autocomplete="username" required>
+                <h1 class="hero-heading">
+                    Precision Assessment.<br>
+                    <span class="gradient-text">Zero-Latency Scale.</span>
+                </h1>
+
+                <p class="hero-desc">
+                    Engineered for high-stakes JEE, NEET, and KCET testing. Backed by 86,000+ curated questions, automated quotas, AI Question Forge, and hardened anti-cheat.
+                </p>
+
+                <div class="feature-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon-box icon-blue">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
                         </div>
+                        <h4>86,730+ Questions</h4>
+                        <p>Complete Physics, Chemistry, Math & Biology curriculum with TeX formatting.</p>
                     </div>
 
-                    <div class="form-group">
-                        <label for="password">Password</label>
-                        <div class="input-wrap">
-                            <svg class="lead-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4.5" y="10" width="15" height="10" rx="2.5"/><path d="M8 10V7.5a4 4 0 0 1 8 0V10"/></svg>
-                            <input type="password" id="password" placeholder="••••••••" autocomplete="current-password" required>
-                            <button type="button" class="eye-btn" id="togglePassword" aria-label="Show password">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></svg>
+                    <div class="feature-card">
+                        <div class="feature-icon-box icon-purple">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                        </div>
+                        <h4>Hardened Anti-Cheat</h4>
+                        <p>Strict fullscreen enforcement, tab-switch penalties, and instant lockout.</p>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon-box icon-green">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2 4.5 13.5H11L9.5 22 19 10h-6.5L13 2z"/></svg>
+                        </div>
+                        <h4>Edge Cloudflare Core</h4>
+                        <p>Global sub-10ms response times for exam fetching and instant submissions.</p>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon-box icon-amber">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path><path d="M22 12A10 10 0 0 0 12 2v10z"></path></svg>
+                        </div>
+                        <h4>Live Analytics</h4>
+                        <p>Real-time percentile tracking, chapter heatmaps, and exam reports.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Interactive Auth Card -->
+            <div class="auth-card-container">
+                <div class="auth-card">
+                    <div class="auth-header">
+                        <h2 class="auth-title">Welcome back</h2>
+                        <p class="auth-subtitle">Sign in to your portal to start your session</p>
+                    </div>
+
+                    <!-- Quick Demo Role Presets -->
+                    <div class="demo-roles-section">
+                        <div class="demo-roles-label">
+                            <span>🚀 One-Click Demo Access</span>
+                            <span style="font-size: 0.7rem; color: #6366f1;">Auto-Fill</span>
+                        </div>
+                        <div class="demo-pills">
+                            <button type="button" class="demo-pill" id="fillStudent" data-email="student@qforge-demo.edu" data-pass="demo1234">
+                                <span>🎓 Student</span>
+                                <span class="pill-sub">NGI Portal</span>
+                            </button>
+                            <button type="button" class="demo-pill" id="fillFaculty" data-email="faculty@qforge-demo.edu" data-pass="demo12345">
+                                <span>👨‍🏫 Faculty</span>
+                                <span class="pill-sub">Physics Dept</span>
+                            </button>
+                            <button type="button" class="demo-pill" id="fillAdmin" data-email="admin@cbt.local" data-pass="change_me_in_production">
+                                <span>🛡️ Admin</span>
+                                <span class="pill-sub">Superuser</span>
                             </button>
                         </div>
                     </div>
 
-                    <button type="submit" class="btn-signin" id="loginBtn">
-                        <span class="btn-text">Sign In</span>
-                        <span class="btn-loader hidden"></span>
-                    </button>
-                </form>
+                    <form id="loginForm" class="login-form" novalidate>
+                        <div class="form-group">
+                            <label class="form-label" for="email">Email address</label>
+                            <div class="input-box">
+                                <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="3" y="5" width="18" height="14" rx="2"></rect>
+                                    <polyline points="3 7 12 13 21 7"></polyline>
+                                </svg>
+                                <input type="email" id="email" class="form-input" placeholder="name@college.edu" autocomplete="username" required>
+                            </div>
+                        </div>
 
-                <div id="errorBox" class="error-box hidden"></div>
+                        <div class="form-group">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.45rem;">
+                                <label class="form-label" for="password" style="margin-bottom: 0;">Password</label>
+                            </div>
+                            <div class="input-box">
+                                <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                                </svg>
+                                <input type="password" id="password" class="form-input" placeholder="••••••••" autocomplete="current-password" required>
+                                <button type="button" class="eye-toggle" id="togglePassword" aria-label="Toggle password visibility">
+                                    <svg id="eyeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                        <circle cx="12" cy="12" r="3"></circle>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn-submit" id="loginBtn">
+                            <span class="btn-text">Sign In to Dashboard</span>
+                            <span class="spinner btn-loader hidden"></span>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                        </button>
+                    </form>
+
+                    <div class="oauth-divider">or continue with</div>
+
+                    <a href="/auth/google" id="googleSignInBtn" class="btn-google">
+                        <svg viewBox="0 0 24 24">
+                            <path fill="#EA4335" d="M12 5c1.54 0 2.89.55 3.96 1.45l2.97-2.97C17.06 1.8 14.7 1 12 1 7.42 1 3.55 3.65 1.63 7.5l3.54 2.75C6.04 7.35 8.78 5 12 5z"/>
+                            <path fill="#4285F4" d="M23.49 12.27c0-.79-.07-1.54-.19-2.27H12v4.51h6.47c-.29 1.48-1.14 2.73-2.4 3.58l3.7 2.87c2.16-2 3.72-4.94 3.72-8.69z"/>
+                            <path fill="#FBBC05" d="M5.17 14.75c-.24-.72-.38-1.49-.38-2.28 0-.79.14-1.56.38-2.28L1.63 7.44C.59 9.53 0 11.95 0 14.5s.59 4.97 1.63 7.06l3.54-2.81z"/>
+                            <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.7-2.87c-1.08.72-2.45 1.16-4.23 1.16-3.22 0-5.96-2.35-6.83-5.25L1.63 16.94C3.55 20.79 7.42 23.44 12 23.44z"/>
+                        </svg>
+                        <span>Sign in with Google</span>
+                    </a>
+
+                    <div id="errorBox" class="error-alert hidden">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                        <span id="errorMessage">Invalid credentials</span>
+                    </div>
+
+                    <div class="auth-card-footer">
+                        Protected by Cloudflare Edge Security &bull; <a href="/manifest.json">PWA Ready</a>
+                    </div>
+                </div>
             </div>
-        </div>
+        </main>
     </div>
 
     <script src="js/api.js"></script>
     <script src="js/login.js"></script>
     <script>
         // Password visibility toggle
-        const pwd = document.getElementById('password');
-        document.getElementById('togglePassword').addEventListener('click', () => {
-            pwd.type = pwd.type === 'password' ? 'text' : 'password';
+        const pwdInput = document.getElementById('password');
+        const eyeToggle = document.getElementById('togglePassword');
+        const eyeIcon = document.getElementById('eyeIcon');
+        
+        if (eyeToggle && pwdInput) {
+            eyeToggle.addEventListener('click', () => {
+                const isPassword = pwdInput.type === 'password';
+                pwdInput.type = isPassword ? 'text' : 'password';
+                eyeIcon.innerHTML = isPassword 
+                    ? '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line>'
+                    : '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle>';
+            });
+        }
+
+        // One-Click Demo Role Presets
+        document.querySelectorAll('.demo-pill').forEach(pill => {
+            pill.addEventListener('click', () => {
+                document.querySelectorAll('.demo-pill').forEach(p => p.classList.remove('active'));
+                pill.classList.add('active');
+                const email = pill.getAttribute('data-email');
+                const pass = pill.getAttribute('data-pass');
+                const emailEl = document.getElementById('email');
+                const passEl = document.getElementById('password');
+                if (emailEl && passEl) {
+                    emailEl.value = email;
+                    passEl.value = pass;
+                    emailEl.focus();
+                }
+            });
         });
     </script>
 </body>

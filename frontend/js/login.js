@@ -56,7 +56,12 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     
     const showError = (message) => {
-        errorBox.textContent = message;
+        const msgEl = document.getElementById('errorMessage');
+        if (msgEl) {
+            msgEl.textContent = message;
+        } else {
+            errorBox.textContent = message;
+        }
         errorBox.classList.remove('hidden');
         
         // Hide after 5 seconds
