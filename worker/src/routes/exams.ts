@@ -47,10 +47,9 @@ export async function listExams(request: Request, env: Env): Promise<Response> {
 
   let query = 'SELECT * FROM exams WHERE college_id = ?';
   const params: any[] = [ctx.user.college_id];
-  const filters: string[] = [];
 
   if (status) {
-    filters.push('status = ?');
+    query += ' AND status = ?';
     params.push(status);
   }
 
@@ -58,16 +57,13 @@ export async function listExams(request: Request, env: Env): Promise<Response> {
   if (ctx.user.role === 'student') {
     const user = await env.DB.prepare('SELECT batch_name FROM users WHERE id = ?').bind(ctx.user.sub).first<{ batch_name: string | null }>();
     if (user?.batch_name) {
-      filters.push('(target_batch IS NULL OR target_batch = ?)');
+      query += ' AND (target_batch IS NULL OR target_batch = ?)';
       params.push(user.batch_name);
     } else {
-      filters.push('target_batch IS NULL');
+      query += ' AND target_batch IS NULL';
     }
   }
 
-  if (filters.length > 0) {
-    query += ' WHERE ' + filters.join(' AND ');
-  }
   query += ' ORDER BY created_at DESC';
 
   const rows = await env.DB.prepare(query).bind(...params).all();
