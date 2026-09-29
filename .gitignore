@@ -35,3 +35,7 @@ worker/migrate-images.ts
 worker/restore-text.mjs
 
 INTERNAL_README.md
+
+# Large audit binaries
+worker/scripts/audit_data/*.parquet
+worker/scripts/audit_data/*.csv

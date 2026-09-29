@@ -1,0 +1,111 @@
+{
+  "audit_title": "QForge Post-Classification Provenance & Copyright Audit",
+  "audit_version": "2.2",
+  "execution_timestamp": "2026-09-29T17:06:25.493422+00:00",
+  "elapsed_seconds": 142.5,
+  "corpus_metrics": {
+    "qforge_total_questions": 86737,
+    "upstream_total_questions": 97359,
+    "upstream_dataset": "datavorous/entrance-exam-dataset",
+    "upstream_revision": "a66a9e715abf764de34755619c6f8068ddf5807d",
+    "upstream_declared_license": "cc-by-4.0"
+  },
+  "matching_summary": {
+    "total_matched": 80953,
+    "match_rate_pct": 93.33,
+    "exact_matches": 64568,
+    "exact_matches_pct": 74.44,
+    "exact_breakdown": {
+      "full_question": 0,
+      "ordered_options": 866,
+      "unordered_options": 0,
+      "stem_only": 63702
+    },
+    "strong_matches": 15085,
+    "strong_matches_pct": 17.39,
+    "possible_semantic_matches": 1300,
+    "possible_semantic_matches_pct": 1.5,
+    "no_match_found": 5784,
+    "no_match_found_pct": 6.67
+  },
+  "provenance_summary": {
+    "provenance_known": 80953,
+    "provenance_unknown": 0,
+    "provenance_unassigned": 5784,
+    "review_required": 79653,
+    "optional_review": 1300,
+    "none_review": 5784
+  },
+  "subject_breakdown": {
+    "biology": {
+      "total": 21693,
+      "exact_matches": 20951,
+      "strong_matches": 631,
+      "possible_matches": 41,
+      "no_match_found": 70,
+      "match_rate_pct": 99.68
+    },
+    "chemistry": {
+      "total": 28294,
+      "exact_matches": 21824,
+      "strong_matches": 4025,
+      "possible_matches": 473,
+      "no_match_found": 1972,
+      "match_rate_pct": 93.03
+    },
+    "mathematics": {
+      "total": 15018,
+      "exact_matches": 9689,
+      "strong_matches": 2352,
+      "possible_matches": 243,
+      "no_match_found": 2734,
+      "match_rate_pct": 81.8
+    },
+    "physics": {
+      "total": 21732,
+      "exact_matches": 12104,
+      "strong_matches": 8077,
+      "possible_matches": 543,
+      "no_match_found": 1008,
+      "match_rate_pct": 95.36
+    }
+  },
+  "top_source_databases": {
+    "MarksBatch2_P3.db": 16676,
+    "MarksBatch2_P4.db": 16299,
+    "MarksBatch2_P2.db": 14102,
+    "MarksBatch2_P1.db": 10386,
+    "MarksBatch0.db": 8028,
+    "MarksBatch1_P1.db": 7958,
+    "MarksBatch1_P2.db": 6085,
+    "db\\MarksBatch2_P1.db": 384,
+    "db\\MarksBatch2_P2.db": 319,
+    "db\\MarksBatch2_P3.db": 275,
+    "db\\MarksBatch0.db": 152,
+    "db\\MarksBatch1_P1.db": 131,
+    "db\\MarksBatch1_P2.db": 95,
+    "db\\MarksBatch2_P4.db": 63
+  },
+  "top_exam_tags": {
+    "['Chemistry', 'p Block Elements (Group 15, 16, 17 & 18)', 'NEET']": 827,
+    "['Chemistry', 'Biomolecules', 'NEET']": 821,
+    "['Biology', 'Principles of Inheritance and Variation', 'NEET']": 743,
+    "['Biology', 'Sexual Reproduction in Flowering Plants', 'NEET']": 683,
+    "['Chemistry', 'd and f Block Elements', 'NEET']": 671,
+    "['Biology', 'Human Health and Diseases', 'NEET']": 659,
+    "['Biology', 'Biological Classification', 'NEET']": 630,
+    "['Biology', 'Human Reproduction', 'NEET']": 628,
+    "['Biology', 'Molecular Basis of Inheritance', 'NEET']": 627,
+    "['Chemistry', 'General Organic Chemistry', 'NEET']": 623,
+    "['Biology', 'Chemical Coordination and Integration', 'NEET']": 619,
+    "['Chemistry', 'Chemical Bonding and Molecular Structure', 'NEET']": 607,
+    "['Chemistry', 's Block Elements', 'NEET']": 569,
+    "['Biology', 'Evolution', 'NEET']": 569,
+    "['Chemistry', 'Coordination Compounds', 'NEET']": 554,
+    "['Chemistry', 'Hydrocarbons', 'NEET']": 551,
+    "['Chemistry', 'Solid State', 'NEET']": 525,
+    "['Chemistry', 'Alcohols Phenols and Ethers', 'NEET']": 518,
+    "['Biology', 'Morphology of Flowering Plants', 'NEET']": 512,
+    "['Biology', 'Body Fluids and Circulation', 'NEET']": 507
+  }
+}

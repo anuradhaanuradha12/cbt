@@ -1,0 +1,22 @@
+{
+  "extraction_timestamp": "2026-09-29T16:54:10.758956+00:00",
+  "database": "cbt-platform (remote D1)",
+  "row_count": 86737,
+  "subject_breakdown": {
+    "chemistry": 28294,
+    "physics": 21732,
+    "biology": 21693,
+    "mathematics": 15018
+  },
+  "difficulty_breakdown": {
+    "easy": 47498,
+    "medium": 35475,
+    "hard": 3764
+  },
+  "provenance_breakdown": {
+    "jev_auto": 86737
+  },
+  "frozen_file_path": "D:\\Websites\\CBT\\worker\\scripts\\audit_data\\qforge_corpus_snapshot.parquet",
+  "frozen_file_size_mb": 22.45,
+  "frozen_file_sha256": "05ad6f34d461769d69e4fd5797eb0a58722f354cefb609e52cc80f886edccf32"
+}

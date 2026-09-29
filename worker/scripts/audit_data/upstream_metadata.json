@@ -1,0 +1,32 @@
+{
+  "dataset_id": "datavorous/entrance-exam-dataset",
+  "commit_sha": "a66a9e715abf764de34755619c6f8068ddf5807d",
+  "retrieval_timestamp": "2026-09-29T16:53:21.436308+00:00",
+  "declared_license": "cc-by-4.0",
+  "row_count": 97359,
+  "columns": [
+    "id",
+    "title",
+    "slug",
+    "question",
+    "tags",
+    "options",
+    "correct_option",
+    "answer",
+    "source_db"
+  ],
+  "frozen_file_path": "D:\\Websites\\CBT\\worker\\scripts\\audit_data\\upstream_entrance_exam_frozen.parquet",
+  "frozen_file_size_mb": 68.8,
+  "frozen_file_sha256": "64b4b02d54a0f1be41b8e7b68db4cd412806a5b78cc84f9c80bd96a6d85ddad9",
+  "sample_fields": {
+    "id": "1",
+    "title": "2.5 mL of 5 2 \u00e2\u0080\u008b M weak monoacidic base ( K b \u00e2\u0080\u008b = 1 \u00c3\u0097 1 0 \u00e2\u0088\u0092 12 at 2 5 \u00e2\u0088\u0098 C ) is titrated with",
+    "slug": "2-5-ml-of-5-2-m-weak-monoacidic-base-k-b-1-1-0-12-at-2-5-c-is-titrated-with-59646",
+    "question": "<div class=\"question\">$2.5 \\mathrm{~mL}$ of $\\frac{2}{5} \\mathrm{M}$ weak monoacidic base $\\left(K_b",
+    "tags": "['Chemistry', 'Ionic Equilibrium', 'JEE Advanced', 'JEE Advanced 2008 (Paper 1)']",
+    "options": "<ul class=\"options\"> <li class=\"\"> <span class=\"option-label\">A</span> <span class=\"option-data\"><br",
+    "correct_option": "<div class=\"correct-answer\">\nThe correct answer is:\n<span class=\"option-value\"><br/>$2.7 \\times 10^{",
+    "answer": "<div class=\"solution\">Weak monoacidic base, e.g. $\\mathrm{BOH}$ is neutralised.<br/>$$<br/>\\mathrm{B",
+    "source_db": "MarksBatch0.db"
+  }
+}
