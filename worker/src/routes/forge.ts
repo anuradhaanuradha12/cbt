@@ -24,12 +24,35 @@ function generateId(): string {
   return crypto.randomUUID();
 }
 
-// ── Gemini Helper ─────────────────────────────────────────────
+// ── Constants & Whitelists ──────────────────────────────────────────
 
 const GEMINI_MODEL = 'gemini-2.0-flash';
 const GEMINI_URL   = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
+const VALID_DIFFICULTIES = ['easy', 'medium', 'hard'] as const;
+const VALID_STANDARDS    = ['KCET', 'JEE_MAIN', 'JEE_ADVANCED', 'NEET', 'general'] as const;
+const VALID_TYPES        = ['mcq', 'msq', 'integer'] as const;
+const VALID_ANSWERS      = new Set(['A', 'B', 'C', 'D']);
+
+type ValidDifficulty = typeof VALID_DIFFICULTIES[number];
+type ValidStandard   = typeof VALID_STANDARDS[number];
+
+function isValidGeneratedDraft(q: any): boolean {
+  if (!q || typeof q !== 'object') return false;
+  const hasText = typeof q.question_text === 'string' && q.question_text.trim().length > 10;
+  const hasOptA = typeof q.option_a === 'string' && q.option_a.trim().length > 0;
+  const hasOptB = typeof q.option_b === 'string' && q.option_b.trim().length > 0;
+  const hasOptC = typeof q.option_c === 'string' && q.option_c.trim().length > 0;
+  const hasOptD = typeof q.option_d === 'string' && q.option_d.trim().length > 0;
+  const hasAns  = typeof q.correct_answer === 'string' && VALID_ANSWERS.has(q.correct_answer.toUpperCase().trim());
+  return hasText && hasOptA && hasOptB && hasOptC && hasOptD && hasAns;
+}
+
+// ── Gemini Helper ─────────────────────────────────────────────
+
 async function callGemini(apiKey: string, prompt: string): Promise<string> {
+  if (!apiKey) throw new Error('GEMINI_API_KEY binding is missing or empty');
+  
   const res = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -56,7 +79,7 @@ async function callGemini(apiKey: string, prompt: string): Promise<string> {
 }
 
 // ── POST /forge/generate ──────────────────────────────────────
-// Calls Gemini and returns draft questions. Does NOT save to DB.
+// Calls Gemini and returns strictly validated draft questions. Does NOT save to DB.
 
 export async function generateQuestions(request: Request, env: Env): Promise<Response> {
   const { error } = await requireAuth(request, env, ['admin', 'content-creator']);
@@ -71,11 +94,19 @@ export async function generateQuestions(request: Request, env: Env): Promise<Res
     return json400('subject, chapter, exam_standard, and difficulty are required');
   }
 
+  if (!VALID_DIFFICULTIES.includes(difficulty as ValidDifficulty)) {
+    return json400(`difficulty must be one of: ${VALID_DIFFICULTIES.join(', ')}`);
+  }
+
+  if (!VALID_STANDARDS.includes(exam_standard as ValidStandard)) {
+    return json400(`exam_standard must be one of: ${VALID_STANDARDS.join(', ')}`);
+  }
+
   const numCount = Math.min(5, Math.max(1, parseInt(String(count)) || 3));
 
   const difficultyGuide: Record<string, string> = {
     easy:   'KCET-level (state board, direct concept recall, single-step)',
-    medium: 'JEE Mains / NEET-level (application-based, moderate reasoning, 2–3 steps)',
+    medium: 'JEE Main / NEET-level (application-based, moderate reasoning, 2–3 steps)',
     hard:   'JEE Advanced-level (multi-concept, deep reasoning, multi-correct possible, 4+ steps)',
   };
 
@@ -103,25 +134,33 @@ Return ONLY the JSON array.`;
 
   try {
     const rawText = await callGemini(env.GEMINI_API_KEY, prompt);
-    // Parse to validate JSON
     const parsed = JSON.parse(rawText);
-    if (!Array.isArray(parsed)) throw new Error('Gemini returned non-array');
+    if (!Array.isArray(parsed) || parsed.length === 0) {
+      throw new Error('Gemini returned an empty or invalid array');
+    }
 
-    // Normalize each draft
-    const drafts = parsed.slice(0, numCount).map((q: any) => ({
-      question_text:   String(q.question_text  || '').trim(),
-      option_a:        String(q.option_a        || '').trim(),
-      option_b:        String(q.option_b        || '').trim(),
-      option_c:        String(q.option_c        || '').trim(),
-      option_d:        String(q.option_d        || '').trim(),
-      correct_answer:  String(q.correct_answer  || '').toUpperCase().trim(),
-      explanation:     String(q.explanation     || '').trim(),
-      // Metadata echoed back for easy submission
-      subject, chapter, topic: topic || chapter,
-      difficulty, exam_standard,
+    const validDrafts = parsed.filter(isValidGeneratedDraft);
+    if (validDrafts.length === 0) {
+      throw new Error('All generated questions failed structural validation (missing fields or invalid options)');
+    }
+
+    const drafts = validDrafts.slice(0, numCount).map((q: any) => ({
+      question_text:   String(q.question_text).trim(),
+      option_a:        String(q.option_a).trim(),
+      option_b:        String(q.option_b).trim(),
+      option_c:        String(q.option_c).trim(),
+      option_d:        String(q.option_d).trim(),
+      correct_answer:  String(q.correct_answer).toUpperCase().trim(),
+      explanation:     String(q.explanation || '').trim(),
+      subject,
+      chapter,
+      topic: topic || chapter,
+      difficulty,
+      exam_standard,
+      generation_model: GEMINI_MODEL,
     }));
 
-    return json({ drafts, model: GEMINI_MODEL });
+    return json({ drafts, count: drafts.length, model: GEMINI_MODEL });
   } catch (e: any) {
     return json({ error: `AI generation failed: ${e.message}` }, 502);
   }
@@ -148,6 +187,32 @@ export async function submitDraft(request: Request, env: Env): Promise<Response>
     return json400('subject, chapter, difficulty, exam_standard, question_text, and correct_answer are required');
   }
 
+  if (!VALID_DIFFICULTIES.includes(difficulty as ValidDifficulty)) {
+    return json400(`difficulty must be one of: ${VALID_DIFFICULTIES.join(', ')}`);
+  }
+
+  if (!VALID_STANDARDS.includes(exam_standard as ValidStandard)) {
+    return json400(`exam_standard must be one of: ${VALID_STANDARDS.join(', ')}`);
+  }
+
+  if (!VALID_TYPES.includes(type as any)) {
+    return json400(`type must be one of: ${VALID_TYPES.join(', ')}`);
+  }
+
+  const cleanAns = String(correct_answer).toUpperCase().trim();
+  if (!VALID_ANSWERS.has(cleanAns)) {
+    return json400('correct_answer must be one of: A, B, C, D');
+  }
+
+  // Pre-submission duplicate check against existing approved questions
+  const existingDup = await env.QFORGE_DB.prepare(
+    'SELECT id FROM approved_questions WHERE question_text = ? LIMIT 1'
+  ).bind(question_text.trim()).first<{ id: string }>();
+
+  if (existingDup) {
+    return json400(`Duplicate detected: this question text already exists in approved proprietary bank (ID: ${existingDup.id})`);
+  }
+
   const id = generateId();
   await env.QFORGE_DB.prepare(`
     INSERT INTO draft_questions (
@@ -159,9 +224,9 @@ export async function submitDraft(request: Request, env: Env): Promise<Response>
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending_ai_review', ?)
   `).bind(
     id, subject, chapter, topic ?? null, difficulty, exam_standard, type,
-    question_text,
-    option_a ?? null, option_b ?? null, option_c ?? null, option_d ?? null,
-    correct_answer, explanation ?? null,
+    question_text.trim(),
+    option_a?.trim() ?? null, option_b?.trim() ?? null, option_c?.trim() ?? null, option_d?.trim() ?? null,
+    cleanAns, explanation?.trim() ?? null,
     question_image_r2_key ?? null, option_image_r2_key ?? null, explanation_image_r2_key ?? null,
     ctx.user.sub,
   ).run();
@@ -184,7 +249,6 @@ export async function listDrafts(request: Request, env: Env): Promise<Response> 
   const conditions: string[] = [];
   const bindings: (string | number)[] = [];
 
-  // Interns only see their own drafts
   if (ctx.user.role === 'content-creator') {
     conditions.push('created_by = ?');
     bindings.push(ctx.user.sub);
@@ -223,7 +287,6 @@ export async function getDraft(request: Request, env: Env, id: string): Promise<
 
   if (!draft) return json404('Draft not found');
 
-  // Interns can only view their own drafts
   if (ctx.user.role === 'content-creator' && draft.created_by !== ctx.user.sub) {
     return json({ error: 'Forbidden' }, 403);
   }
@@ -263,7 +326,16 @@ export async function patchDraft(request: Request, env: Env, id: string): Promis
   const fields = Object.keys(body).filter(k => allowedFields.includes(k));
   if (fields.length === 0) return json400('No valid fields to update');
 
-  // If intern edits after AI flag, reset to pending_ai_review so they re-run AI check
+  if (body.difficulty && !VALID_DIFFICULTIES.includes(body.difficulty as ValidDifficulty)) {
+    return json400(`difficulty must be one of: ${VALID_DIFFICULTIES.join(', ')}`);
+  }
+  if (body.exam_standard && !VALID_STANDARDS.includes(body.exam_standard as ValidStandard)) {
+    return json400(`exam_standard must be one of: ${VALID_STANDARDS.join(', ')}`);
+  }
+  if (body.correct_answer && !VALID_ANSWERS.has(body.correct_answer.toUpperCase().trim())) {
+    return json400('correct_answer must be one of: A, B, C, D');
+  }
+
   const shouldReset = draft.status === 'ai_flagged';
   const setClause = [
     ...fields.map(f => `${f} = ?`),
@@ -277,8 +349,8 @@ export async function patchDraft(request: Request, env: Env, id: string): Promis
 }
 
 // ── POST /forge/:id/ai-review ─────────────────────────────────
-// Triggers the Gemini quality gate on a submitted draft.
-// Sets status to 'pending_human_approval' (score ≥ 0.75) or 'ai_flagged'.
+// Triggers structured quality audit on a draft.
+// Sets status to 'pending_human_approval' only if hard quality invariants hold.
 
 export async function runAiReview(request: Request, env: Env, id: string): Promise<Response> {
   const { ctx, error } = await requireAuth(request, env, ['admin', 'content-creator']);
@@ -306,7 +378,7 @@ export async function runAiReview(request: Request, env: Env, id: string): Promi
 
   const prompt = `You are a senior question quality auditor for Indian competitive entrance exams (JEE / NEET / KCET).
 
-Carefully review this MCQ question and return a JSON quality report:
+Carefully review this MCQ question and return a structured JSON quality audit:
 
 Question: ${draft.question_text}
 ${optionsText ? `Options:\n${optionsText}` : ''}
@@ -315,20 +387,20 @@ Explanation: ${draft.explanation || '(none provided)'}
 Target Standard: ${draft.exam_standard}
 Difficulty: ${draft.difficulty}
 
-AUDIT CRITERIA:
-1. Factual accuracy — is the question and answer scientifically/mathematically correct?
-2. LaTeX correctness — are all math expressions properly formatted?
-3. Option quality — are distractors plausible (not trivially wrong)?
-4. Clarity — is the question unambiguous?
-5. Difficulty calibration — is the complexity right for ${draft.exam_standard}?
-6. Explanation quality — does it show full step-by-step working?
+AUDIT RULES:
+1. Recalculate and independently verify if ${draft.correct_answer} is genuinely the mathematically and scientifically correct option.
+2. Check if LaTeX formatting is valid and complete ($...$ inline, $$...$$ display).
+3. Ensure the question stem is completely unambiguous.
+4. Verify that the 3 incorrect options are distinct and plausible distractors.
 
 Return ONLY this JSON object (no preamble, no markdown):
 {
   "score": <float 0.0 to 1.0>,
-  "pass": <true if score >= 0.75, else false>,
   "correct_answer_verified": <true|false>,
   "difficulty_appropriate": <true|false>,
+  "latex_valid": <true|false>,
+  "unambiguous": <true|false>,
+  "options_distinct_and_plausible": <true|false>,
   "issues": ["<issue1>", "<issue2>"],
   "suggestions": ["<suggestion1>", "<suggestion2>"]
 }`;
@@ -338,8 +410,13 @@ Return ONLY this JSON object (no preamble, no markdown):
     const feedback = JSON.parse(rawText);
 
     const score: number = parseFloat(feedback.score) || 0;
-    const passed: boolean = score >= 0.75;
-    const newStatus = passed ? 'pending_human_approval' : 'ai_flagged';
+    const isAnswerVerified: boolean = feedback.correct_answer_verified === true;
+    const isLatexValid: boolean      = feedback.latex_valid === true;
+    const isUnambiguous: boolean     = feedback.unambiguous === true;
+
+    // Hard Quality Gate: Must pass critical invariant checks AND have score >= 0.75
+    const hardFail = !isAnswerVerified || !isLatexValid || !isUnambiguous || score < 0.75;
+    const newStatus = hardFail ? 'ai_flagged' : 'pending_human_approval';
 
     await env.QFORGE_DB.prepare(`
       UPDATE draft_questions
@@ -351,11 +428,16 @@ Return ONLY this JSON object (no preamble, no markdown):
       id,
       status:  newStatus,
       score,
-      passed,
+      passed: !hardFail,
+      findings: {
+        correct_answer_verified: isAnswerVerified,
+        latex_valid: isLatexValid,
+        unambiguous: isUnambiguous,
+      },
       feedback,
-      message: passed
-        ? '✅ AI review passed. Ready for human approval.'
-        : `⚠️ AI flagged issues (score: ${score.toFixed(2)}). Please fix and re-submit.`,
+      message: !hardFail
+        ? '✅ AI review passed structured quality gate. Ready for human approval.'
+        : `⚠️ AI flagged quality issues (Score: ${score.toFixed(2)}). Review issues and update draft.`,
     });
   } catch (e: any) {
     return json({ error: `AI review failed: ${e.message}` }, 502);
@@ -363,51 +445,56 @@ Return ONLY this JSON object (no preamble, no markdown):
 }
 
 // ── POST /forge/:id/approve ───────────────────────────────────
-// Admin only. Moves draft to approved_questions table.
+// Admin only. Conditional concurrency transition to approved_questions.
 
 export async function approveDraft(request: Request, env: Env, id: string): Promise<Response> {
   const { ctx, error } = await requireAuth(request, env, ['admin']);
   if (error) return error;
 
+  const now = Math.floor(Date.now() / 1000);
+
+  // Atomic conditional state transition (guards against concurrent race conditions)
+  const updateResult = await env.QFORGE_DB.prepare(`
+    UPDATE draft_questions 
+    SET status = 'approved', reviewed_by = ?, reviewed_at = ? 
+    WHERE id = ? AND status = 'pending_human_approval'
+  `).bind(ctx.user.sub, now, id).run();
+
+  if (updateResult.meta.changes === 0) {
+    const current = await env.QFORGE_DB.prepare('SELECT status FROM draft_questions WHERE id = ?')
+      .bind(id).first<{ status: string }>();
+    if (!current) return json404('Draft not found');
+    return json400(`Draft cannot be approved. Current status is '${current.status}'. Must be 'pending_human_approval'.`);
+  }
+
+  // Fetch verified draft data
   const draft = await env.QFORGE_DB.prepare('SELECT * FROM draft_questions WHERE id = ?')
     .bind(id).first<any>();
 
-  if (!draft) return json404('Draft not found');
-
-  if (draft.status !== 'pending_human_approval') {
-    return json400(`Draft must be in 'pending_human_approval' status (current: '${draft.status}'). Run AI review first.`);
-  }
-
   const approvedId = generateId();
-  const now = Math.floor(Date.now() / 1000);
 
-  await env.QFORGE_DB.batch([
-    env.QFORGE_DB.prepare(`
-      INSERT INTO approved_questions (
-        id, draft_id, subject, chapter, topic, difficulty, exam_standard, type,
-        question_text, option_a, option_b, option_c, option_d,
-        correct_answer, explanation,
-        question_image_r2_key, option_image_r2_key, explanation_image_r2_key,
-        ai_score, created_by, approved_by, approved_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).bind(
-      approvedId, id,
-      draft.subject, draft.chapter, draft.topic ?? null,
-      draft.difficulty, draft.exam_standard, draft.type,
-      draft.question_text,
-      draft.option_a ?? null, draft.option_b ?? null,
-      draft.option_c ?? null, draft.option_d ?? null,
-      draft.correct_answer, draft.explanation ?? null,
-      draft.question_image_r2_key ?? null,
-      draft.option_image_r2_key ?? null,
-      draft.explanation_image_r2_key ?? null,
-      draft.ai_score ?? null,
-      draft.created_by, ctx.user.sub, now,
-    ),
-    env.QFORGE_DB.prepare(`
-      UPDATE draft_questions SET status = 'approved', reviewed_by = ?, reviewed_at = ? WHERE id = ?
-    `).bind(ctx.user.sub, now, id),
-  ]);
+  await env.QFORGE_DB.prepare(`
+    INSERT INTO approved_questions (
+      id, draft_id, subject, chapter, topic, difficulty, exam_standard, type,
+      question_text, option_a, option_b, option_c, option_d,
+      correct_answer, explanation,
+      question_image_r2_key, option_image_r2_key, explanation_image_r2_key,
+      ai_score, created_by, approved_by, approved_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).bind(
+    approvedId, id,
+    draft.subject, draft.chapter, draft.topic ?? null,
+    draft.difficulty, draft.exam_standard, draft.type,
+    draft.question_text,
+    draft.option_a ?? null, draft.option_b ?? null,
+    draft.option_c ?? null, draft.option_d ?? null,
+    draft.correct_answer, draft.explanation ?? null,
+    draft.question_image_r2_key ?? null,
+    draft.option_image_r2_key ?? null,
+    draft.explanation_image_r2_key ?? null,
+    draft.ai_score ?? null,
+    draft.created_by, ctx.user.sub, now,
+  ).run();
 
   return json({ approved_id: approvedId, draft_id: id, message: '✅ Question approved and added to proprietary bank.' }, 201);
 }
@@ -418,19 +505,21 @@ export async function rejectDraft(request: Request, env: Env, id: string): Promi
   const { ctx, error } = await requireAuth(request, env, ['admin']);
   if (error) return error;
 
-  const draft = await env.QFORGE_DB.prepare('SELECT id, status FROM draft_questions WHERE id = ?')
-    .bind(id).first<{ id: string; status: string }>();
-
-  if (!draft) return json404('Draft not found');
-  if (draft.status === 'approved') return json400('Cannot reject an already-approved question');
-
   let reason = '';
   try { const b = await request.json() as any; reason = b.reason ?? ''; } catch {}
 
   const now = Math.floor(Date.now() / 1000);
-  await env.QFORGE_DB.prepare(
-    `UPDATE draft_questions SET status = 'rejected', reviewed_by = ?, reviewed_at = ?, ai_feedback = json_patch(COALESCE(ai_feedback, '{}'), ?) WHERE id = ?`
-  ).bind(ctx.user.sub, now, JSON.stringify({ rejection_reason: reason }), id).run();
+  const result = await env.QFORGE_DB.prepare(`
+    UPDATE draft_questions 
+    SET status = 'rejected', reviewed_by = ?, reviewed_at = ?, ai_feedback = json_patch(COALESCE(ai_feedback, '{}'), ?) 
+    WHERE id = ? AND status != 'approved'
+  `).bind(ctx.user.sub, now, JSON.stringify({ rejection_reason: reason }), id).run();
+
+  if (result.meta.changes === 0) {
+    const draft = await env.QFORGE_DB.prepare('SELECT status FROM draft_questions WHERE id = ?').bind(id).first<any>();
+    if (!draft) return json404('Draft not found');
+    return json400(`Cannot reject a draft with status '${draft.status}'`);
+  }
 
   return json({ message: 'Draft rejected.' });
 }
@@ -472,8 +561,7 @@ export async function listApproved(request: Request, env: Env): Promise<Response
 }
 
 // ── POST /forge/upload-image ──────────────────────────────────
-// Uploads an image to R2 and returns the r2_key.
-// The client then saves this key in the draft's image field.
+// Uploads an image to R2 under the isolated forge/ namespace and returns the r2_key.
 
 export async function uploadForgeImage(request: Request, env: Env): Promise<Response> {
   const { ctx, error } = await requireAuth(request, env, ['admin', 'content-creator']);
@@ -498,11 +586,15 @@ export async function uploadForgeImage(request: Request, env: Env): Promise<Resp
 }
 
 // ── GET /forge/image/:key ─────────────────────────────────────
-// Serves an image from R2 by its key.
+// Serves an image from R2 by its key, enforcing namespace isolation.
 
 export async function serveForgeImage(request: Request, env: Env, key: string): Promise<Response> {
   const { error } = await requireAuth(request, env, ['admin', 'faculty', 'content-creator']);
   if (error) return error;
+
+  if (!key.startsWith('forge/')) {
+    return json400('Invalid image key (must reside within forge/ namespace)');
+  }
 
   const object = await env.CBT_R2.get(key);
   if (!object) return json404('Image not found');
