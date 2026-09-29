@@ -158,6 +158,46 @@ async function scoreSubmission(
     UPDATE submissions SET score = ?, total_correct = ?, total_wrong = ?, total_unattempted = ?
     WHERE id = ?
   `).bind(score, totalCorrect, totalWrong, totalUnattempted, submissionId).run();
+
+  // ── Closed-Loop Empirical Calibration ────────────────────────
+  // Track actual student attempt counts & accuracy rate per question.
+  // Flag conflicts when observed accuracy diverges from model predictions under configurable rules.
+  try {
+    const questionUpdates = rows.results
+      .filter(r => r.selected_answer !== null) // only count attempted answers
+      .map(r => {
+        const isCorr = r.selected_answer === r.correct_answer ? 1 : 0;
+        return env.DB.prepare(`
+          UPDATE questions
+          SET 
+            observed_attempt_count = COALESCE(observed_attempt_count, 0) + 1,
+            observed_accuracy_rate = (
+              (COALESCE(observed_accuracy_rate, 0.0) * COALESCE(observed_attempt_count, 0) + ?) / 
+              (COALESCE(observed_attempt_count, 0) + 1)
+            ),
+            difficulty_validation_status = CASE 
+              WHEN (COALESCE(observed_attempt_count, 0) + 1) >= 50 THEN 'empirically_validated'
+              ELSE difficulty_validation_status
+            END,
+            difficulty_review_status = CASE
+              WHEN (COALESCE(observed_attempt_count, 0) + 1) >= 50 
+                   AND difficulty = 'easy' 
+                   AND ((COALESCE(observed_accuracy_rate, 0.0) * COALESCE(observed_attempt_count, 0) + ?) / (COALESCE(observed_attempt_count, 0) + 1)) < 0.35
+                   AND COALESCE(difficulty_confidence, 0.0) >= 0.80
+              THEN 'flagged_conflict'
+              ELSE difficulty_review_status
+            END
+          WHERE id = ?
+        `).bind(isCorr, isCorr, r.question_id);
+      });
+
+    if (questionUpdates.length > 0) {
+      await env.DB.batch(questionUpdates);
+    }
+  } catch (err) {
+    console.error('Failed to update empirical calibration metrics:', err);
+  }
+
 }
 
 // ── POST /submissions/draft ───────────────────────────────────

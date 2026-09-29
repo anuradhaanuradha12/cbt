@@ -40,7 +40,9 @@ All accounts share the standard password: **`demo12345`**
 | :--- | :--- | :--- | :--- |
 | **D1 Database** | `cbt-platform`<br>`220c5793-3f10-460a-b5fc-8f3223feee43` | `DB` | Main database (86,730+ questions, users, exams, submissions) |
 | **D1 Database** | `cbt-qforge`<br>`bbe7c7a4-acbf-42c3-ba60-17e34e5bf9bb` | `QFORGE_DB` | AI Question Forge drafts & approved questions |
-| **KV Namespace** | `cbt-worker-CBT_KV`<br>`9ceb8c5eef2541fcbc7485301a4b23b0` | `CBT_KV` | Session caching & sanitized exam caching |
+| **Decision AI** | TypeSafe System One (`jev-latest`) | `TYPESAFE_API_KEY` | Question difficulty classification & calibration |
+| **Fast Cache** | `cbt-worker-CBT_KV`<br>`9ceb8c5eef2541fcbc7485301a4b23b0` | `CBT_KV` | Session caching & sanitized exam caching |
+
 | **R2 Bucket** | `cbt-media` | `CBT_R2` | Storage for diagrams, figures, and question images |
 
 ---

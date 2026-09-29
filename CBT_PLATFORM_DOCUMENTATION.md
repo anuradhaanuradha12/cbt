@@ -121,15 +121,42 @@ Integrated with Google Gemini generative models on Cloudflare Workers to assist 
   1. Content Creator / Intern reviews and formats draft in Question Forge (`question-gen.html`).
   2. Subject Faculty / Principal inspects and signs off before moving questions into the approved repository (`cbt-qforge`).
 
+## ⚡ 7. TypeSafe Jev Question Difficulty Intelligence & Calibration Engine
+
+Integrated with TypeSafe AI's **Jev System One Model (`choice` decision layer)** to provide auditable, rubric-grounded difficulty classification, empirical calibration, and provenance tracking.
+
+### • 100% Production Bank Classification Status
+The entire **86,737-question bank** on remote Cloudflare D1 is 100% classified with auditable provenance and zero unclassified questions:
+
+| Subject | Total Questions | Easy (Count / %) | Medium (Count / %) | Hard (Count / %) | Rubric Version | Status |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| ⚛️ **Physics** | 21,732 | 6,813 (31.3%) | 13,572 (62.5%) | 1,347 (6.2%) | `physics-kcet-v1.0` | ✅ **100.0%** |
+| 📐 **Mathematics** | 15,018 | 3,192 (21.3%) | 10,102 (67.3%) | 1,724 (11.5%) | `mathematics-kcet-v1.0` | ✅ **100.0%** |
+| 🧪 **Chemistry** | 28,294 | 17,996 (63.6%) | 9,702 (34.3%) | 596 (2.1%) | `chemistry-kcet-v1.0` | ✅ **100.0%** |
+| 🧬 **Biology** | 21,693 | 19,497 (89.9%) | 2,099 (9.7%) | 97 (0.4%) | `biology-kcet-v1.0` | ✅ **100.0%** |
+| **TOTAL** | **86,737** | **47,498 (54.76%)** | **35,475 (40.90%)** | **3,764 (4.34%)** | — | 🎯 **100.0%** |
+
+### • 4-Layer Decision Architecture
+1. **Deterministic Question Signals Layer**: Deterministically extracts observable syntactic features (`char_count`, `latex_formula_count`, `equation_count`, `has_diagram`, `concept_count_estimate`, `step_count_estimate`, `has_case_analysis`) and computes a canonical SHA-256 `difficulty_question_hash`.
+2. **Versioned Subject-Specific Rubric Layer**: Binds structured, immutable criteria (`physics-kcet-v1.0`, `chemistry-kcet-v1.0`, `mathematics-kcet-v1.0`, `biology-kcet-v1.0`).
+3. **TypeSafe Jev `choice` Decision Adapter**: Evaluates question state against target rubrics, returning calibrated confidence scores and complete probability distributions (`easy | medium | hard`).
+4. **Faculty Override & Provenance Storage**: Stored directly in D1 with full provenance (`difficulty_confidence`, `difficulty_source`, `difficulty_review_status`, `difficulty_validation_status`, `difficulty_model_version`, `difficulty_rubric_version`).
+
+### • Closed-Loop Empirical Calibration
+- Background exam submission scoring tracks real-world student attempts (`observed_attempt_count`, `observed_accuracy_rate`).
+- Questions with $\ge 50$ attempts are promoted to `empirically_validated`.
+- Automatically flags discrepancies (`flagged_conflict`) for faculty review if student accuracy significantly diverges from model predictions (e.g. predicted `Easy` but student accuracy $< 35\%$).
+
 ---
 
-## 🏗️ 7. Technical Infrastructure Specifications
+## 🏗️ 8. Technical Infrastructure Specifications
 
 | Component | Cloudflare Service | Technology / Specs | Role |
 | :--- | :--- | :--- | :--- |
 | **API Runtime** | Cloudflare Workers | TypeScript / WebCrypto API | High-throughput edge routing, sub-10ms response times |
 | **Primary DB** | Cloudflare D1 | Distributed SQLite (`cbt-platform`) | 86,730+ questions, users, exam schedules, attempts, scoring |
 | **AI Question DB** | Cloudflare D1 | Distributed SQLite (`cbt-qforge`) | Draft questions, approved proprietary questions |
+| **Decision Model**| TypeSafe AI (Jev) | System One `choice` API | Auditable question difficulty classification and calibration |
 | **Fast Cache** | Cloudflare KV | Distributed Key-Value (`CBT_KV`) | Session management, sanitized exam payload caching |
 | **Media Storage** | Cloudflare R2 | S3-Compatible Object Store (`cbt-media`) | High-resolution question diagrams, circuit schematics, figures |
 | **Frontend** | Cloudflare Static Assets | Vanilla HTML5 / CSS3 / JavaScript | Zero-build overhead, instant PWA loading, MathJax equations |
@@ -137,7 +164,8 @@ Integrated with Google Gemini generative models on Cloudflare Workers to assist 
 
 ---
 
-## 📋 8. Quick Start Guide
+## 📋 9. Quick Start Guide
+
 
 ### Running Locally
 ```bash

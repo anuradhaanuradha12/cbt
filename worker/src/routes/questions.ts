@@ -218,6 +218,83 @@ export async function updateQuestion(request: Request, env: Env, id: string): Pr
   return json({ message: 'Question updated' });
 }
 
+// ── POST /questions/classify-difficulty ────────────────────────
+// Deterministic signals + TypeSafe Jev model decision
+export async function classifyQuestionDifficulty(request: Request, env: Env): Promise<Response> {
+  const { error } = await requireAuth(request, env, ['admin', 'faculty', 'content-creator']);
+  if (error) return error;
+
+  const apiKey = env.TYPESAFE_API_KEY || env.JEV_API_KEY;
+  if (!apiKey) {
+    return json400('TYPESAFE_API_KEY is not configured in worker environment');
+  }
+
+  let body: Record<string, any>;
+  try { body = await request.json(); } catch { return json400('Invalid JSON'); }
+
+  const {
+    subject, exam_standard = 'general', question_text,
+    option_a, option_b, option_c, option_d, image_r2_key
+  } = body;
+
+  if (!subject || !question_text) {
+    return json400('subject and question_text are required');
+  }
+
+  const { extractQuestionSignals, computeQuestionHash } = await import('../utils/question-signals');
+  const { TypeSafeJevClient } = await import('../services/jev');
+
+  const signals = extractQuestionSignals({
+    subject,
+    question_text,
+    option_a,
+    option_b,
+    option_c,
+    option_d,
+    image_r2_key,
+  });
+
+  const question_hash = await computeQuestionHash({
+    subject,
+    exam_standard,
+    question_text,
+    option_a,
+    option_b,
+    option_c,
+    option_d,
+  });
+
+  try {
+    const jevClient = new TypeSafeJevClient({ apiKey });
+    const decision = await jevClient.classify({
+      subject,
+      exam_standard,
+      question_text,
+      option_a,
+      option_b,
+      option_c,
+      option_d,
+      image_r2_key,
+      signals,
+      question_hash,
+    });
+
+    return json({
+      success: true,
+      decision,
+    });
+  } catch (e: any) {
+    // Return structured failure response so the client knows it needs manual faculty review
+    return json({
+      success: false,
+      error: e.message,
+      signals,
+      question_hash,
+      fallback_status: 'pending_faculty_review',
+    }, 502);
+  }
+}
+
 // ── Route Dispatcher ─────────────────────────────────────────
 
 export async function questionsRouter(
@@ -237,6 +314,9 @@ export async function questionsRouter(
   if (pathname === '/questions/bulk' && method === 'POST') {
     return bulkImportQuestions(request, env);
   }
+  if (pathname === '/questions/classify-difficulty' && method === 'POST') {
+    return classifyQuestionDifficulty(request, env);
+  }
 
   // /questions/:id
   const match = pathname.match(/^\/questions\/([^/]+)$/);
@@ -248,3 +328,4 @@ export async function questionsRouter(
 
   return null;
 }
+

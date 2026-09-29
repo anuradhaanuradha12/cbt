@@ -578,6 +578,70 @@
     }
     .ai-pass-title { font-size: 11px; font-weight: 700; color: var(--green); text-transform: uppercase; letter-spacing: 0.6px; }
 
+    /* Jev Decision & Evidence Drawer */
+    .jev-evidence-card {
+      background: rgba(99, 102, 241, 0.08);
+      border: 1px solid rgba(99, 102, 241, 0.25);
+      border-radius: var(--radius-sm);
+      padding: 12px;
+      margin-bottom: 8px;
+    }
+    .jev-evidence-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    .jev-evidence-title {
+      font-size: 11px;
+      font-weight: 700;
+      color: #818cf8;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .jev-conf-pill {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 12px;
+      background: rgba(99, 102, 241, 0.2);
+      color: #c7d2fe;
+      border: 1px solid rgba(99, 102, 241, 0.3);
+    }
+    .jev-signals-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      margin-top: 8px;
+      font-size: 11px;
+    }
+    .jev-signal-item {
+      background: var(--surface2);
+      padding: 5px 8px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--text-dim);
+    }
+    .jev-signal-item b {
+      color: var(--text);
+    }
+    .jev-rubric-rule {
+      margin-top: 8px;
+      padding: 6px 8px;
+      background: var(--surface3);
+      border-left: 2px solid var(--accent);
+      border-radius: 0 4px 4px 0;
+      font-size: 11px;
+      color: var(--text-dim);
+      line-height: 1.4;
+    }
+
+
     /* Action buttons */
     .btn {
       padding: 9px 14px;
@@ -997,13 +1061,18 @@
           </select>
         </div>
         <div class="form-group">
-          <label class="form-label">Difficulty</label>
-          <div class="difficulty-selector">
-            <button type="button" class="diff-btn" id="diff-easy"   onclick="setDifficulty('easy')">🟢 Easy</button>
-            <button type="button" class="diff-btn" id="diff-medium" onclick="setDifficulty('medium')">🟡 Medium</button>
-            <button type="button" class="diff-btn" id="diff-hard"   onclick="setDifficulty('hard')">🔴 Hard</button>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <label class="form-label" style="margin-bottom:0">Difficulty</label>
+            <button type="button" class="card-btn btn-ai" id="btn-jev-eval" style="padding:2px 8px;font-size:10px" onclick="evaluateDifficultyWithJev()">⚡ Jev AI Classify</button>
           </div>
+          <div class="difficulty-selector">
+            <button type="button" class="diff-btn" id="diff-easy"   onclick="setDifficulty('easy', 'faculty_override')">🟢 Easy</button>
+            <button type="button" class="diff-btn" id="diff-medium" onclick="setDifficulty('medium', 'faculty_override')">🟡 Medium</button>
+            <button type="button" class="diff-btn" id="diff-hard"   onclick="setDifficulty('hard', 'faculty_override')">🔴 Hard</button>
+          </div>
+          <div id="jev-evidence-container" style="display:none;margin-top:8px"></div>
         </div>
+
 
       </div><!-- /editor-scroll -->
 
@@ -1441,13 +1510,101 @@ function setCorrect(letter) {
   });
 }
 
-function setDifficulty(d) {
+let difficultySource = 'jev_auto';
+let difficultyConfidence = null;
+let lastJevDecision = null;
+
+function setDifficulty(d, source = 'jev_auto') {
   difficulty = d;
+  difficultySource = source;
   ['easy','medium','hard'].forEach(v => {
     const btn = document.getElementById(`diff-${v}`);
     if (btn) { btn.className = 'diff-btn'; if (v === d) btn.classList.add(`active-${v}`); }
   });
 }
+
+async function evaluateDifficultyWithJev() {
+  const subject = document.getElementById('ed-subject').value;
+  const exam_standard = document.getElementById('ed-standard').value;
+  const question_text = document.getElementById('ed-question').value.trim();
+  const option_a = document.getElementById('ed-opt-a').value.trim();
+  const option_b = document.getElementById('ed-opt-b').value.trim();
+  const option_c = document.getElementById('ed-opt-c').value.trim();
+  const option_d = document.getElementById('ed-opt-d').value.trim();
+
+  if (!question_text) {
+    toast('Enter question text before evaluating difficulty.', 'error');
+    return;
+  }
+
+  const btn = document.getElementById('btn-jev-eval');
+  btn.disabled = true;
+  btn.textContent = '⏳ Evaluating…';
+
+  try {
+    const res = await apiFetch('/questions/classify-difficulty', {
+      method: 'POST',
+      body: {
+        subject,
+        exam_standard,
+        question_text,
+        option_a,
+        option_b,
+        option_c,
+        option_d,
+        image_r2_key: imageKeys.question || undefined,
+      },
+    });
+
+    btn.disabled = false;
+    btn.textContent = '⚡ Jev AI Classify';
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      toast(err.error || 'Jev classification failed', 'error');
+      return;
+    }
+
+    const data = await res.json();
+    const dec = data.decision;
+    lastJevDecision = dec;
+    difficultyConfidence = dec.confidence;
+
+    // Apply Jev difficulty decision
+    setDifficulty(dec.difficulty, 'jev_auto');
+
+    // Render Evidence Drawer
+    const evContainer = document.getElementById('jev-evidence-container');
+    evContainer.style.display = 'block';
+    evContainer.innerHTML = `
+      <div class="jev-evidence-card">
+        <div class="jev-evidence-header">
+          <div class="jev-evidence-title">⚡ Jev System One Decision</div>
+          <div class="jev-conf-pill">Confidence: ${(dec.confidence * 100).toFixed(0)}%</div>
+        </div>
+        <div style="font-size:12px;color:var(--text);margin-bottom:6px">
+          Classified as <b style="text-transform:uppercase">${dec.difficulty}</b> (${dec.rubric_version})
+        </div>
+        <div class="jev-signals-grid">
+          <div class="jev-signal-item">📐 Formulas: <b>${dec.signals.latex_formula_count}</b></div>
+          <div class="jev-signal-item">🔢 Equations: <b>${dec.signals.equation_count}</b></div>
+          <div class="jev-signal-item">🧠 Concepts: <b>${dec.signals.concept_count_estimate}</b></div>
+          <div class="jev-signal-item">🪜 Est. Steps: <b>${dec.signals.step_count_estimate}</b></div>
+        </div>
+        <div class="jev-rubric-rule">
+          💡 Model Version: <code>${dec.model_version}</code> · Status: <b>${dec.review_status}</b>
+        </div>
+      </div>
+    `;
+
+    toast(`Classified as ${dec.difficulty.toUpperCase()} (${(dec.confidence * 100).toFixed(0)}% confidence)`, 'success');
+  } catch (err) {
+    btn.disabled = false;
+    btn.textContent = '⚡ Jev AI Classify';
+    toast('Failed to reach Jev decision service', 'error');
+  }
+}
+
 
 // ── Image Upload ───────────────────────────────────────────────────────────
 async function handleImageUpload(type, input) {
@@ -1530,12 +1687,19 @@ function collectEditorValues() {
 
   return {
     subject, chapter, difficulty, exam_standard,
+    difficulty_source: difficultySource,
+    difficulty_confidence: difficultyConfidence,
+    difficulty_model_version: lastJevDecision?.model_version,
+    difficulty_rubric_version: lastJevDecision?.rubric_version,
+    difficulty_signals: lastJevDecision?.signals ? JSON.stringify(lastJevDecision.signals) : undefined,
+    difficulty_question_hash: lastJevDecision?.question_hash,
     question_text, option_a, option_b, option_c, option_d,
     correct_answer: correctAnswer, explanation,
     question_image_r2_key:    imageKeys.question    || undefined,
     option_image_r2_key:      imageKeys.option      || undefined,
     explanation_image_r2_key: imageKeys.explanation || undefined,
   };
+
 }
 
 // ── AI Review ──────────────────────────────────────────────────────────────
