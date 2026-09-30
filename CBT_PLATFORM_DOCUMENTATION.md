@@ -213,6 +213,7 @@ To maintain clarity on system guarantees and operating assumptions, the architec
 - **Target Footprint**: 10 partner colleges $\times$ 100 workstations = **1,000 concurrent examinees**.
 - **Persistence Projection**: At 16.23 submissions/sec, a 1,000-student synchronized submission wave projects to approximately **61.6 seconds** at the validated 16.23 sub/sec rate (a throughput projection, not a separate capacity test).
 - **Workload Distinction**: The 10K benchmark validates the synchronized submission and persistence storm path. A separate 3-hour endurance test characterizes continuous autosave traffic over full examination duration.
+- **Data Settlement & Teardown**: The benchmark was reconciled against the remote D1 database at settlement; synthetic benchmark records were subsequently removed from the production database. The complete benchmark ledger and reconciliation report are retained in the repository.
 
 ---
 

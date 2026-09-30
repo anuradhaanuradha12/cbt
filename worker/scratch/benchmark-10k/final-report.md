@@ -133,5 +133,5 @@ From native edge audit endpoint `GET /admin/reconciliation?exam_id=bbf22745-8a8b
    - For an operational footprint of **10 colleges × 100 workstations = 1,000 simultaneous examinees**, a synchronized final-submit wave would project to approximately **61.6 seconds** if the observed 16.23 submissions/sec drain rate were maintained under the smaller workload; this is a throughput projection, not a separate 1,000-student capacity test.
    - The platform demonstrated stability under a synchronized submission workload **10× larger** than this operational footprint without observing D1 overload or queue-timeout errors during the measured persistence drain.
    - **Workload Distinction**: The 10,000-student benchmark validates the synchronized submission/persistence path. It does not by itself constitute a 3-hour endurance test of continuous autosave traffic.
-5. **Data Inspectability**:
-   - All 10,000 submissions, attempts, and answers remain persisted in remote D1 under exam ID `bbf22745-8a8b-4a85-bcfc-a227dd6c3fe4` for independent verification.
+5. **Data Settlement & Teardown**:
+   - The benchmark was reconciled against the remote D1 database at settlement; synthetic benchmark records were subsequently removed from the production database. The complete benchmark ledger and reconciliation report are retained in the repository.

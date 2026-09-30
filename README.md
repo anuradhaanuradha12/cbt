@@ -127,7 +127,7 @@ QForge is **validated against a synchronized 10,000-submission workload** and de
 | **Edge Storm Acceptance** | **10,799 / 10,799 (100.0%)** | Initial synchronized barrier release in 8.45s (1,278.57 req/s) |
 | **Total Queue Deliveries** | **10,800** | 10,799 automated deliveries + 1 recovered staging delivery |
 | **Injected Duplicate Retries** | **800 (8.0%)** | Full duplicate retry payloads simulated |
-| **Authoritative Submissions** | **10,000 / 10,000** | Exact D1 persistence match (`bbf22745-8a8b-4a85-bcfc-a227dd6c3fe4`) |
+| **Authoritative Submissions** | **10,000 / 10,000** | Exact D1 persistence match at settlement (`bbf22745-8a8b-4a85-bcfc-a227dd6c3fe4`) |
 | **Authoritative Answer Rows** | **100,000 / 100,000** | Strictly 10 answers/student (zero orphaned or missing rows) |
 | **Finalized Attempts (`submitted`)** | **10,000 / 10,000** | Atomic attempt status finalization verified |
 | **Duplicate Authoritative Rows** | **0** | Attempt-level duplicate protection verified |
@@ -140,5 +140,6 @@ QForge is **validated against a synchronized 10,000-submission workload** and de
 - **Operational Footprint**: 10 colleges $\times$ 100 workstations = **1,000 simultaneous examinees**.
 - **Persistence Drain Projection**: A synchronized submission storm from 1,000 examinees would project to approximately **61.6 seconds** at the validated 16.23 sub/s rate (a throughput projection, not a separate capacity test).
 - **Workload Boundary**: Validates the synchronized submission and persistence storm path; a separate 3-hour endurance test characterizes continuous autosave traffic.
+- **Data Settlement & Teardown**: The benchmark was reconciled against the remote D1 database at settlement; synthetic benchmark records were subsequently removed from the production database. The complete benchmark ledger and reconciliation report are retained in the repository.
 - **Full Report**: See [`worker/scripts/audit_data/benchmark-10000-queue-storm.md`](worker/scripts/audit_data/benchmark-10000-queue-storm.md) for complete latency distributions and SQL reconciliation logs.
 
