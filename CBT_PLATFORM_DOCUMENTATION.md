@@ -1,6 +1,13 @@
 # CBT Platform — Comprehensive Feature & System Documentation
 
-A secure, multi-tenant, edge-native **Computer-Based Testing (CBT)** and **Question Intelligence Platform** engineered for high-stakes entrance examinations (JEE Main/Advanced, NEET-UG, KCET, and custom institutional formats).
+A secure, multi-tenant, edge-native **Computer-Based Testing (CBT)** and **Question Intelligence Platform** engineered for high-stakes entrance examinations including JEE Main/Advanced, NEET-UG, KCET and custom institutional formats.
+
+QForge combines a browser-based examination experience with server-authoritative exam state, Cloudflare Workers, KV, Queues, D1 and R2, alongside an AI-assisted question-generation and difficulty-intelligence workflow.
+
+The platform is designed around a simple architectural principle:
+> *KV handles ephemeral student state. Queues absorb synchronized submission bursts. Controlled consumers protect D1. D1 remains the system of record.*
+
+The current architecture has been empirically tested against a 10,000-submission synchronized workload, including duplicate delivery injection and authoritative database reconciliation.
 
 ---
 
@@ -25,7 +32,7 @@ The platform is accessible locally and deployed on Cloudflare's global edge netw
 
 ## 🚀 2. Platform Overview
 
-The CBT platform delivers high-concurrency, zero-latency digital testing without traditional virtual machine or container bottlenecks. Built entirely on Cloudflare's serverless edge infrastructure (Workers, D1, KV, and R2), the system handles massive student cohorts with instant sub-10ms response times, zero exam paper leaks, and multi-tenant institutional isolation.
+The CBT platform delivers high-concurrency, low-latency digital testing without traditional virtual machine or container bottlenecks. Built on Cloudflare's serverless edge infrastructure (Workers, D1, KV, and R2), the system handles institutional student cohorts with edge-native request handling designed to minimize latency and ensure multi-tenant isolation.
 
 ---
 
@@ -56,13 +63,13 @@ The CBT platform delivers high-concurrency, zero-latency digital testing without
 
 ---
 
-## 🛡️ 4. Advanced Anti-Cheating & Proctoring (Fair Play)
+## 🛡️ 4. Advanced Anti-Cheating & Exam Integrity (Fair Play)
 
-To maintain absolute academic integrity, the platform integrates background proctoring safeguards:
+To maintain academic integrity, the platform integrates multi-layered exam integrity safeguards:
 
-### • The 3-Strike Proctoring Policy
-- Any unauthorized action triggers a real-time on-screen warning banner.
-- Accumulating **3 strikes** instantly force-submits the exam attempt and permanently locks the candidate session.
+### • Configurable 3-Strike Exam Integrity Policy
+- Configured integrity events trigger a real-time on-screen warning banner.
+- Accumulating **3 strikes** force-submits the exam attempt and locks the candidate's exam session according to the configured institutional policy.
 
 ### • Focus & Exam Integrity Monitoring
 - **PC:** Fullscreen mode, clipboard restrictions, context-menu restrictions and visibility/tab-switch event monitoring.
@@ -70,11 +77,13 @@ To maintain absolute academic integrity, the platform integrates background proc
 - **Server-side validation:** Exam timing and submission state are independently validated by the backend rather than trusted solely to the client.
 
 ### • Copy, Paste & Right-Click Interception
-- Disables clipboard manipulation, context menus, and text highlighting to prevent unauthorized extraction or sharing of questions.
+- Disables clipboard manipulation, context menus, and text highlighting to mitigate unauthorized copying or extraction of question text.
 
-### • Zero-Leak Security Architecture
-- Questions, answer keys, and solution payloads are stripped server-side.
-- Candidates cannot inspect network traffic or browser memory to preview questions or answers prior to official evaluation.
+### • Question & Answer-Key Separation
+- Candidate-facing payloads exclude answer keys and administrative scoring metadata.
+- Answer evaluation occurs server-side after submission.
+- Exam authorization, timing and submission state are independently validated by the Worker.
+- The platform minimizes sensitive exam material exposed to the client before it is required.
 
 ---
 
@@ -140,12 +149,12 @@ The entire **86,737-question bank** on remote Cloudflare D1 is 100% classified w
 ### • 4-Layer Decision Architecture
 1. **Deterministic Question Signals Layer**: Deterministically extracts observable syntactic features (`char_count`, `latex_formula_count`, `equation_count`, `has_diagram`, `concept_count_estimate`, `step_count_estimate`, `has_case_analysis`) and computes a canonical SHA-256 `difficulty_question_hash`.
 2. **Versioned Subject-Specific Rubric Layer**: Binds structured, immutable criteria (`physics-kcet-v1.0`, `chemistry-kcet-v1.0`, `mathematics-kcet-v1.0`, `biology-kcet-v1.0`).
-3. **TypeSafe Jev `choice` Decision Adapter**: Evaluates question state against target rubrics, returning calibrated confidence scores and complete probability distributions (`easy | medium | hard`).
+3. **TypeSafe Jev `choice` Decision Adapter**: Evaluates question state against target rubrics, returning confidence scores and probability distributions (`easy | medium | hard`).
 4. **Faculty Override & Provenance Storage**: Stored directly in D1 with full provenance (`difficulty_confidence`, `difficulty_source`, `difficulty_review_status`, `difficulty_validation_status`, `difficulty_model_version`, `difficulty_rubric_version`).
 
 ### • Closed-Loop Empirical Calibration
 - Background exam submission scoring tracks real-world student attempts (`observed_attempt_count`, `observed_accuracy_rate`).
-- Questions with $\ge 50$ attempts are promoted to `empirically_validated`.
+- Questions with $\ge 50$ attempts are promoted to `empirically_validated` as a product-defined validation threshold (not statistical proof of absolute difficulty).
 - Automatically flags discrepancies (`flagged_conflict`) for faculty review if student accuracy significantly diverges from model predictions (e.g. predicted `Easy` but student accuracy $< 35\%$).
 
 ---
@@ -154,21 +163,34 @@ The entire **86,737-question bank** on remote Cloudflare D1 is 100% classified w
 
 | Component | Cloudflare Service | Technology / Specs | Role |
 | :--- | :--- | :--- | :--- |
-| **API Runtime** | Cloudflare Workers | TypeScript / WebCrypto API | High-throughput edge routing, sub-10ms response times |
+| **API Runtime** | Cloudflare Workers | TypeScript / WebCrypto API | Edge-native request handling designed to minimize latency |
 | **Ingestion Buffer**| Cloudflare Queues | `cbt-submissions-queue` (`max_concurrency = 2`, `batch = 25`) | Synchronized storm absorption, decoupled D1 persistence |
 | **Decoupled Scoring**| Cloudflare Queues | `cbt-scoring-queue` (`max_concurrency = 2`, `batch = 25`) | Asynchronous scoring evaluation and student analytics |
 | **Dead Letter Queues**| Cloudflare Queues | `cbt-submissions-dlq` & `cbt-scoring-dlq` | Poison-pill isolation, real-time KV counter monitoring |
-| **Primary DB** | Cloudflare D1 | Distributed SQLite (`cbt-platform`) | 86,737 questions, users, exam schedules, attempts, scoring |
-| **AI Question DB** | Cloudflare D1 | Distributed SQLite (`cbt-qforge`) | Draft questions, approved proprietary questions |
+| **Primary DB** | Cloudflare D1 | Managed serverless SQL / SQLite-compatible database (`cbt-platform`) | 86,737 questions, users, exam schedules, attempts, scoring |
+| **AI Question DB** | Cloudflare D1 | Managed serverless SQL / SQLite-compatible database (`cbt-qforge`) | Draft questions, approved proprietary questions |
 | **Decision Model**| TypeSafe AI (Jev) | System One `choice` API | Auditable question difficulty classification and calibration |
 | **Fast Cache** | Cloudflare KV | Distributed Key-Value (`CBT_KV`) | Session tokens, 20s autosave drafts, sanitized exam payloads |
 | **Media Storage** | Cloudflare R2 | S3-Compatible Object Store (`cbt-media`) | High-resolution question diagrams, circuit schematics, figures |
 | **Frontend** | Cloudflare Static Assets | Vanilla HTML5 / CSS3 / JavaScript | Zero-build overhead, instant PWA loading, MathJax equations |
-| **Auth Security** | Native Web Crypto | PBKDF2-SHA256 (100,000 iterations) | OWASP-compliant password hashing and signed JWT tokens |
+| **Auth Security** | Native Web Crypto | PBKDF2-HMAC-SHA256 (100,000 iterations) | Salted password hashing with signed JWT session tokens |
 
 ---
 
-## ⚡ 9. High-Concurrency Scaling & Empirical 10,000-Submission Validation
+## 🛑 9. Engineering Boundaries & Design Non-Goals
+
+To maintain clarity on system guarantees and operating assumptions, the architecture explicitly defines the following boundaries:
+- **No Durable Objects in the production architecture**: Relies on edge Queues and controlled worker concurrency to avoid active instance duration charges.
+- **No synchronous D1 writes on the student final-submission path**: Final submissions are enqueued to Cloudflare Queues and acknowledged with HTTP 202; persistence drains asynchronously.
+- **No client-side trust for authoritative state**: Exam scheduling, countdown limits, question counts, and submission validity are verified server-side.
+- **No answer-key delivery in candidate payloads**: Live test bundles delivered to examinees strictly exclude correct options and solution rationales.
+- **No automatic promotion of raw AI generation**: Every AI-generated question requires human faculty review and sign-off before entering the production question bank.
+- **No 10,000-student 3-hour endurance claim**: The 10K benchmark specifically validates the synchronized submission storm and persistence pipeline; continuous multi-hour autosave traffic represents a distinct workload profile.
+- **No statistical claim of infallible AI classification**: The TypeSafe Jev difficulty engine provides rubric-grounded classifications and probability distributions; empirical attempt tracking ($\ge 50$ attempts) and faculty overrides form an essential calibration feedback loop.
+
+---
+
+## ⚡ 10. High-Concurrency Scaling & Empirical 10,000-Submission Validation
 
 > **Defensible Architectural Conclusion**:  
 > **QForge has empirically validated a synchronized 10,000-submission workload on Cloudflare Workers, Queues, D1 and KV. A total of 10,800 total submission deliveries (10,000 authentic + 800 duplicate retries), including one authentic submission delivered after the initial automated staging anomaly, reconciled to exactly 10,000 authoritative submissions, 100,000 answer rows and 10,000 finalized attempts. The controlled persistence pipeline sustained an observed 16.23 submissions/sec at consumer concurrency 2, with zero observed D1 overload/queue-timeout errors and zero DLQ messages.**  
@@ -194,7 +216,7 @@ The entire **86,737-question bank** on remote Cloudflare D1 is 100% classified w
 
 ---
 
-## 📋 10. Quick Start Guide
+## 📋 11. Quick Start Guide
 
 ### Running Locally
 ```bash

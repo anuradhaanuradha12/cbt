@@ -32,7 +32,7 @@ QForge is **validated against a synchronized 10,000-submission workload** and de
 | **Read Path / Cache** | Cloudflare KV | Immutable exam JSON payloads + ephemeral 20s autosave drafts |
 | **Burst Ingestion Buffer** | Cloudflare Queues (`cbt-submissions-queue`) | Absorbs synchronized finish storms (`max_concurrency = 2`, `batch = 25`) |
 | **Decoupled Scoring** | Cloudflare Queues (`cbt-scoring-queue`) | Asynchronous answer scoring and difficulty recalibration |
-| **System of Record** | Cloudflare D1 | 86,700+ question bank, authoritative submissions, and analytics |
+| **System of Record** | Cloudflare D1 | Managed serverless SQL (86,700+ questions, authoritative submissions, analytics) |
 | **Media / Assets** | Cloudflare R2 | Question and explanation diagrams |
 | **Frontend** | Cloudflare Pages / Static Assets | Vanilla PWA (zero build dependencies, instant delivery) |
 
@@ -52,11 +52,12 @@ QForge is **validated against a synchronized 10,000-submission workload** and de
                    │  Auth / API │
                    └──────┬──────┘
                           │
-            ┌─────────────┼─────────────┐
-            │             │             │
-            ▼             ▼             ▼
-           KV           Cache           R2
-       Exam/Drafts     Static         Diagrams
+            ┌─────────────┴─────────────┐
+            │                           │
+            ▼                           ▼
+           KV                          R2
+   ├── Exam payloads            Media / Diagrams
+   └── Autosave drafts
             │
             ▼
       FINAL SUBMIT (202 Accepted)
@@ -100,6 +101,15 @@ QForge is **validated against a synchronized 10,000-submission workload** and de
 3. **KV Draft Retention Safety Net**: Student answer drafts in KV are **not** dropped on submit. They remain alive until D1 commits the authoritative submission.
 4. **Multi-Entity Database Idempotency**: `ON CONFLICT` constraints across `submissions`, `submission_answers`, and `exam_attempts` guarantee that duplicate client retries or redeliveries result in exactly one finalized submission without orphaned answers.
 5. **Decoupled Scoring Domain**: Grading and question accuracy recalibration execute in an independent queue consumer, preventing scoring calculation errors from rolling back valid student submissions.
+
+### Engineering Boundaries & Design Non-Goals
+- **No Durable Objects in the production architecture**: Relies on edge Queues and controlled consumer concurrency to avoid active instance duration charges.
+- **No synchronous D1 writes on student final-submission path**: Submissions are queued and acknowledged with HTTP 202; persistence drains asynchronously.
+- **No client-side trust for authoritative state**: Exam scheduling, timers, question counts, and submission validity are verified server-side.
+- **No answer-key delivery in candidate payloads**: Live test bundles delivered to examinees strictly exclude correct options and solution rationales.
+- **No automatic promotion of raw AI generation**: Every AI-generated question requires human faculty review and sign-off before entering the production question bank.
+- **No 10,000-student 3-hour endurance claim**: The 10K benchmark specifically validates the synchronized submission storm and persistence pipeline; continuous multi-hour autosave traffic represents a distinct workload profile.
+- **No statistical claim of infallible AI classification**: The TypeSafe Jev difficulty engine provides rubric-grounded classifications and probability distributions; empirical attempt tracking ($\ge 50$ attempts) and faculty overrides form an essential calibration feedback loop.
 
 ---
 
