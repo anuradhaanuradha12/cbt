@@ -55,6 +55,27 @@ export default {
       response ??= await imagesRouter(request, env, pathname);
       response ??= await forgeRouter(request, env, pathname);
 
+      if (pathname === '/admin/reconciliation' && request.method === 'GET') {
+        const urlParams = new URL(request.url).searchParams;
+        const examId = urlParams.get('exam_id');
+        
+        const countQuery = examId 
+          ? `SELECT 
+               (SELECT COUNT(*) FROM exam_attempts WHERE exam_id = ?) as attempts,
+               (SELECT COUNT(*) FROM submissions WHERE exam_id = ?) as submissions,
+               (SELECT COUNT(*) FROM submissions WHERE exam_id = ? AND score IS NOT NULL) as scored_submissions,
+               (SELECT COUNT(*) FROM submission_answers WHERE submission_id IN (SELECT id FROM submissions WHERE exam_id = ?)) as answers`
+          : `SELECT 
+               (SELECT COUNT(*) FROM exam_attempts) as attempts,
+               (SELECT COUNT(*) FROM submissions) as submissions,
+               (SELECT COUNT(*) FROM submissions WHERE score IS NOT NULL) as scored_submissions,
+               (SELECT COUNT(*) FROM submission_answers) as answers`;
+        
+        const params = examId ? [examId, examId, examId, examId] : [];
+        const counts = await env.DB.prepare(countQuery).bind(...params).first<Record<string, number>>();
+        return json(counts || {});
+      }
+
       if (pathname === '/admin/maintenance/purge-bench' && request.method === 'POST') {
         let totalPurged = 0;
         for (let iter = 0; iter < 100; iter++) {
