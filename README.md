@@ -13,17 +13,18 @@ Building everything on an edge-native architecture allows for a lightweight plat
 
 - **Progressive Web App (PWA):** Fully responsive on mobile. Can be installed directly to the home screen (Standalone Mode) on iOS and Android.
 - **Multi-Tenant Architecture:** Capable of serving multiple colleges from a single deployment with absolute data isolation.
-- **Strict Anti-Cheat:** 
-  - **PC:** Enforces Fullscreen API, disables copy/paste, right-click, and tracks tab-switching.
-  - **Mobile:** Zero-tolerance policy on app switching or minimizing.
-- **Real-time Analytics Dashboard:** Real-time dashboards (Average Score, Peak Engagement, Attempt details).
+- **Exam Integrity Controls:** 
+  - **PC:** Fullscreen mode, clipboard restrictions, context-menu restrictions and visibility/tab-switch event monitoring.
+  - **Mobile:** Visibility-change, page-lifecycle and focus-loss monitoring, with configurable exam-integrity responses.
+  - **Server-side validation:** Exam timing and submission state are independently validated by the backend rather than trusted solely to the client.
+- **Live Exam Analytics Dashboard:** Score, participation and attempt metrics with continuously refreshed exam-state data.
 - **Dynamic Exam Generation:** Automated exam generation and quotas based on specific test formats.
 - **AI-Assisted Question Workflow:** Proprietary Question Forge workflow for automated, high-quality question generation and review.
 - **Exam Scheduling & Waiting Room:** Scheduled exams unlock exactly at start time. Includes a pre-exam instruction screen.
 
-## Stack & Cost Philosophy
+## Stack & Architecture Philosophy
 
-QForge is engineered to handle up to **10,000 concurrent students** during high-stakes entrance exams with **zero Durable Objects ($0 active duration charges)**, keeping overall platform infrastructure within a **$5–10/month** envelope:
+QForge is **validated against a synchronized 10,000-submission workload** and designed for an operational footprint of approximately **1,000 simultaneous examinees**. The system is designed to minimize infrastructure overhead, with **no Durable Objects** in the production architecture ($0 active duration charges):
 
 | Layer | Technology | Primary Role |
 | :--- | :--- | :--- |
@@ -102,10 +103,12 @@ QForge is engineered to handle up to **10,000 concurrent students** during high-
 
 ---
 
-## 🏆 Empirical 10,000-Student Synchronized Workload Validation
+## 🏆 Empirical 10,000-Submission Synchronized Workload Validation
 
 > **Defensible Engineering Headline**:  
-> **QForge has empirically validated a 10,000-submission synchronized workload on Cloudflare Workers + Queues + D1 + KV. A total of 10,800 submission deliveries, including 800 duplicate deliveries, reconciled to exactly 10,000 authoritative submissions, 100,000 answer rows and 10,000 finalized attempts. The controlled persistence pipeline sustained an observed 16.23 submissions/sec at consumer concurrency 2, with zero observed D1 overload/queue-timeout errors and zero DLQ messages.**
+> **QForge has empirically validated a synchronized 10,000-submission workload on Cloudflare Workers, Queues, D1 and KV. A total of 10,800 total submission deliveries (10,000 authentic + 800 duplicate retries), including one authentic submission delivered after the initial automated staging anomaly, reconciled to exactly 10,000 authoritative submissions, 100,000 answer rows and 10,000 finalized attempts. The controlled persistence pipeline sustained an observed 16.23 submissions/sec at consumer concurrency 2, with zero observed D1 overload/queue-timeout errors and zero DLQ messages.**  
+>  
+> **The intended production footprint is approximately 1,000 simultaneous examinees, with the 10,000-submission benchmark providing a substantially larger tested submission workload.**
 
 ### Validation Ledger & Reconciliation Truth
 
@@ -119,7 +122,7 @@ QForge is engineered to handle up to **10,000 concurrent students** during high-
 | **Finalized Attempts (`submitted`)** | **10,000 / 10,000** | Atomic attempt status finalization verified |
 | **Duplicate Authoritative Rows** | **0** | Attempt-level duplicate protection verified |
 | **Dead Letter Queue (DLQ)** | **0 messages** | Both submissions DLQ and scoring DLQ remained empty |
-| **D1 Overload / Contention Errors** | **0 observed** | Zero timeout or lock failures during entire persistence drain |
+| **D1 Overload / Contention Errors** | **0 observed** | Zero observed D1 overload or queue-timeout errors during the measured persistence drain |
 | **Observed Persistence Throughput** | **16.23 sub/sec** | ~162.3 rows/sec sustained across 616.26s (~10.27 min) drain |
 | **Active Durable Objects** | **0** | $0 DO active duration fees |
 

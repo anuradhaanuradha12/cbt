@@ -64,9 +64,10 @@ To maintain absolute academic integrity, the platform integrates background proc
 - Any unauthorized action triggers a real-time on-screen warning banner.
 - Accumulating **3 strikes** instantly force-submits the exam attempt and permanently locks the candidate session.
 
-### • Tab & Application Focus Monitoring
-- Detects window minimization, split-screen activation, or switching to external search tabs/calculators.
-- Immediately logs an infraction event and issues a strike.
+### • Focus & Exam Integrity Monitoring
+- **PC:** Fullscreen mode, clipboard restrictions, context-menu restrictions and visibility/tab-switch event monitoring.
+- **Mobile:** Visibility-change, page-lifecycle and focus-loss monitoring, with configurable exam-integrity responses.
+- **Server-side validation:** Exam timing and submission state are independently validated by the backend rather than trusted solely to the client.
 
 ### • Copy, Paste & Right-Click Interception
 - Disables clipboard manipulation, context menus, and text highlighting to prevent unauthorized extraction or sharing of questions.
@@ -167,10 +168,12 @@ The entire **86,737-question bank** on remote Cloudflare D1 is 100% classified w
 
 ---
 
-## ⚡ 9. High-Concurrency Scaling & Empirical 10,000-Student Validation
+## ⚡ 9. High-Concurrency Scaling & Empirical 10,000-Submission Validation
 
 > **Defensible Architectural Conclusion**:  
-> **QForge has empirically validated a 10,000-submission synchronized workload on Cloudflare Workers + Queues + D1 + KV. A total of 10,800 submission deliveries, including 800 duplicate deliveries, reconciled to exactly 10,000 authoritative submissions, 100,000 answer rows and 10,000 finalized attempts. The controlled persistence pipeline sustained an observed 16.23 submissions/sec at consumer concurrency 2, with zero observed D1 overload/queue-timeout errors and zero DLQ messages.**
+> **QForge has empirically validated a synchronized 10,000-submission workload on Cloudflare Workers, Queues, D1 and KV. A total of 10,800 total submission deliveries (10,000 authentic + 800 duplicate retries), including one authentic submission delivered after the initial automated staging anomaly, reconciled to exactly 10,000 authoritative submissions, 100,000 answer rows and 10,000 finalized attempts. The controlled persistence pipeline sustained an observed 16.23 submissions/sec at consumer concurrency 2, with zero observed D1 overload/queue-timeout errors and zero DLQ messages.**  
+>  
+> **The intended production footprint is approximately 1,000 simultaneous examinees, with the 10,000-submission benchmark providing a substantially larger tested submission workload.**
 
 ### • Key Invariant Verification Ledger
 - **Synchronized Storm Burst**: 10,799 requests admitted in 8.45s (**1,278.57 req/sec observed client-side admission rate**) with 100% HTTP 202 acceptance.
@@ -181,12 +184,12 @@ The entire **86,737-question bank** on remote Cloudflare D1 is 100% classified w
   - Finalized Attempts: **10,000** (`status = 'submitted'`)
   - Duplicate Authoritative Rows: **0**
   - Dead Letter Queue Messages: **0**
-  - Observed D1 Overload / Contention Errors: **0**
+  - Observed D1 Overload / Queue-Timeout Errors: **0**
 - **Durable Objects Removed**: Zero Durable Objects active duration fees ($0 cost overhead; pure edge Queue decoupling).
 
 ### • Target Multi-College Deployment Context
 - **Target Footprint**: 10 partner colleges $\times$ 100 workstations = **1,000 concurrent examinees**.
-- **Persistence Projection**: At 16.23 submissions/sec, a 1,000-student synchronized submission wave projects to approximately **~61.6 seconds** of persistence drain time (throughput projection under smaller workload).
+- **Persistence Projection**: At 16.23 submissions/sec, a 1,000-student synchronized submission wave projects to approximately **61.6 seconds** at the validated 16.23 sub/sec rate (a throughput projection, not a separate capacity test).
 - **Workload Distinction**: The 10K benchmark validates the synchronized submission and persistence storm path. A separate 3-hour endurance test characterizes continuous autosave traffic over full examination duration.
 
 ---
