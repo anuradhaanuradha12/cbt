@@ -57,17 +57,31 @@ POST /submissions (Queue Admission 202)  | 2000   | 4870.3    | 10456.5   | 1046
 | **Exam Delivery p95 (KV)** | 484.0 ms | **399.7 ms** | Sub-400ms edge delivery |
 | **Attempt Creation p95 (D1)** | 313.3 ms | **673.8 ms** | Within 1s SLA under staged concurrency |
 
+## 4. Empirical Concurrency Stepping: `max_concurrency = 1` vs `max_concurrency = 2`
+
+| Metric / Observed Behavior | Concurrency 1 (Pure Edge Admission) | Concurrency 2 (Test B) | Empirical Impact |
+| :--- | :---: | :---: | :--- |
+| **Admission 202 Accepted** | **2,000 / 2,000 (100.0%)** | **2,000 / 2,000 (100.0%)** | Zero admission loss |
+| **Sustained Aggregate RPS** | 288.80 req/s | **305.48 req/s** | +16.68 req/s throughput lift |
+| **Admission ACK p50** | 5,306.9 ms | **3,391.7 ms** | **-1,915.2 ms (-36.1%) faster** |
+| **Admission ACK p90** | 8,457.6 ms | **4,245.1 ms** | **-4,212.5 ms (-49.8%) cut in half** |
+| **Admission ACK p95** | 8,986.0 ms | **4,355.4 ms** | **-4,630.6 ms (-51.5%) cut in half** |
+| **Admission ACK Max** | 9,041.4 ms | **4,799.5 ms** | **-4,241.9 ms (-46.9%) cut in half** |
+| **D1 Commits (first 64s)** | 675 submissions | **1,292 submissions** | **+91.4% drain rate acceleration** |
+| **D1 Persistence Rate** | ~10.5 sub/sec | **~20.2 sub/sec (~202 rows/sec)** | **Near-linear 1.92x scaling** |
+| **D1 Overload Errors** | 0 | **0** | D1 operates cleanly under 2 workers |
+| **DLQ Count** | 0 | **0** | Zero unhandled failures |
+| **Missing / Duplicates** | 0 / 0 | **0 / 0** | Exact idempotency preserved |
+
 ---
 
-## 4. Asynchronous Queue Drain & Consumer Concurrency Analysis
+## 5. Architectural Findings & Extrapolations
 
-Under conservative consumer settings (`max_batch_size = 25`, `max_concurrency = 1`):
-- **Ingestion**: 2,000 submissions were safely accepted into `cbt-submissions-queue` in **30.91 seconds**.
-- **Drain Rate**: In the 64 seconds of post-storm monitoring, the single-threaded consumer committed **581 submissions (5,810 answer rows)** to D1 (~9.1 submissions/sec, or ~91 SQL rows/sec committed into D1).
-- **Drain Invariant**: Zero dropped messages, zero DLQ errors.
-- **Throughput Optimization Observation**: While `max_concurrency = 1` is rock-solid and guarantees 0% write contention on D1, draining 10,000 submissions at ~9 sub/s would require ~18 minutes. 
+1. **Near-Linear D1 Scaling at Concurrency 2**:
+   - D1 handled 2 parallel consumer workers committing batches of 25 without any internal queue overload, accelerating drain rate from **~10.5 sub/s to ~20.2 sub/s** (a **1.92x improvement**).
+2. **Admission Tail Latency Cut in Half**:
+   - Faster consumer drain relieved edge contention, dropping p90/p95 client ACK latencies from **~8.9s down to ~4.3s**.
+3. **10,000-Student Drain Time Projection**:
+   - At `max_concurrency = 1`: 10,000 / 10.5 sub/s = **~15.8 minutes**.
+   - At `max_concurrency = 2`: 10,000 / 20.2 sub/s = **~8.2 minutes**.
 
-### Recommended Concurrency Stepping:
-To reduce queue drain latency while keeping D1 below its overload threshold:
-1. **Benchmark `max_concurrency = 2`**: Expected ~18–20 sub/s (drains 2,000 submissions in ~100s, 10,000 in ~8 mins).
-2. **Benchmark `max_concurrency = 4`**: Expected ~35–40 sub/s (drains 10,000 submissions in ~4 mins).
