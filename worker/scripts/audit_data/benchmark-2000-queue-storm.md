@@ -11,9 +11,10 @@
 
 ## 1. Executive Summary
 
-In direct head-to-head comparison against the previous synchronous direct-to-D1 storm (which triggered `D1_ERROR: D1 DB is overloaded` and dropped 1,540 requests), the **Cloudflare Queue ingestion buffer achieved 100.00% SLA compliance with zero dropped transactions across 8,000 total operations**.
+The Queue admission layer accepted all 2,000 synchronized submission requests with HTTP 202 and zero observed admission failures. In direct head-to-head comparison against the previous synchronous direct-to-D1 storm (which triggered `D1_ERROR: D1 DB is overloaded` and dropped 1,540 requests), Cloudflare Queues completely eliminated D1 serverless queue saturation errors on client-facing requests.
 
-Every single one of the 2,000 virtual examinees received an authorized `202 Accepted` response, completely eliminating D1 serverless queue saturation errors.
+Authoritative D1 persistence proceeded asynchronously, with 581 submissions committed during the initial 64-second observation window and zero observed dead-letter queue (DLQ) messages.
+
 
 ---
 
