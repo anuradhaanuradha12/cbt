@@ -40,6 +40,8 @@ CREATE TABLE IF NOT EXISTS questions (
 );
 CREATE INDEX IF NOT EXISTS idx_questions_filter
   ON questions(subject, chapter, difficulty);
+CREATE INDEX IF NOT EXISTS idx_questions_created_by
+  ON questions(created_by);
 
 -- ─── Exams ──────────────────────────────────────────────────
 -- parent_exam_id + version support versioned papers (v1, v2…)
