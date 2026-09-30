@@ -54,5 +54,31 @@ binding = "ASSETS"
 tag = "v2-drop-durable-objects"
 deleted_classes = ["SubmissionShard"]
 
+# ── Cloudflare Queues: Producers ──────────────────────────────
+[[queues.producers]]
+binding = "SUBMISSIONS_QUEUE"
+queue = "cbt-submissions-queue"
+
+[[queues.producers]]
+binding = "SCORING_QUEUE"
+queue = "cbt-scoring-queue"
+
+# ── Cloudflare Queues: Consumers ──────────────────────────────
+[[queues.consumers]]
+queue = "cbt-submissions-queue"
+max_batch_size = 25
+max_batch_timeout = 2
+max_retries = 5
+max_concurrency = 1
+dead_letter_queue = "cbt-submissions-dlq"
+
+[[queues.consumers]]
+queue = "cbt-scoring-queue"
+max_batch_size = 25
+max_batch_timeout = 5
+max_retries = 3
+max_concurrency = 2
+dead_letter_queue = "cbt-scoring-dlq"
+
 
 

@@ -20,5 +20,29 @@ export interface Env {
 
   // Static Assets fetcher
   ASSETS?: Fetcher;
+
+  // Cloudflare Queues
+  SUBMISSIONS_QUEUE: Queue<SubmissionMessage>;
+  SCORING_QUEUE: Queue<ScoringMessage>;
 }
+
+export interface SubmissionMessage {
+  submission_id: string;
+  attempt_id: string;
+  exam_id: string;
+  student_id: string;
+  college_id: string;
+  time_taken_seconds: number;
+  submitted_at: number;
+  answers: Record<string, string | null>;
+  marked_for_review: string[];
+  answer_timestamps: Record<string, number | null>;
+}
+
+export interface ScoringMessage {
+  submission_id: string;
+  exam_id: string;
+  college_id: string;
+}
+
 

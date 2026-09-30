@@ -7,8 +7,8 @@
 import { json, json400, json403, json404, json409 } from '../middleware/responses';
 import { requireAuth } from '../middleware/auth';
 import { KV_DRAFT_EXTRA_TTL, SUBMIT_GRACE_SECONDS } from '../config';
-import type { Env } from '../types';
-import type { SubmitRequest, ExamConfig, ExamPayload } from '../../../shared/types';
+import type { Env, SubmissionMessage } from '../types';
+import type { SubmitRequest, ExamPayload } from '../../../shared/types';
 
 function generateId(): string {
   return crypto.randomUUID();
@@ -21,7 +21,7 @@ function generateId(): string {
 export async function submitExam(
   request: Request,
   env: Env,
-  ctx: ExecutionContext
+  _ctx: ExecutionContext
 ): Promise<Response> {
   const { ctx: authCtx, error } = await requireAuth(request, env, ['student']);
   if (error) return error;
@@ -58,153 +58,41 @@ export async function submitExam(
     return json403(`Exam time ended ${now - exam.ends_at}s ago. Submission rejected.`);
   }
 
-  // ── Insert submission & answers in 1 atomic write batch ──────
+  // ── Formulate and Enqueue SubmissionMessage ─────────────────
+  // Server-owned submission_id tied deterministically to attempt_id
   const submissionId = generateId();
+  const submissionMessage: SubmissionMessage = {
+    submission_id: submissionId,
+    attempt_id,
+    exam_id,
+    student_id: authCtx.user.sub,
+    college_id: authCtx.user.college_id,
+    time_taken_seconds,
+    submitted_at: now,
+    answers,
+    marked_for_review,
+    answer_timestamps
+  };
 
-  // Fetch question list for this exam to ensure we record all questions (even unattempted)
-  const examQs = await env.DB.prepare(
-    'SELECT question_id FROM exam_questions WHERE exam_id = ?'
-  ).bind(exam_id).all<{ question_id: string }>();
-
-  const updateAttemptStmt = env.DB.prepare(
-    'UPDATE exam_attempts SET status = ?, last_seen_at = ? WHERE id = ?'
-  ).bind('submitted', now, attempt_id);
-
-  const insertSubmissionStmt = env.DB.prepare(`
-    INSERT INTO submissions (id, attempt_id, exam_id, student_id, time_taken_seconds, college_id)
-    VALUES (?, ?, ?, ?, ?, ?)
-  `).bind(submissionId, attempt_id, exam_id, authCtx.user.sub, time_taken_seconds, authCtx.user.college_id);
-
-  const answerStmt = env.DB.prepare(`
-    INSERT INTO submission_answers (submission_id, question_id, selected_answer, marked_for_review, answered_at)
-    VALUES (?, ?, ?, ?, ?)
-  `);
-
-  const writeBatch = [
-    updateAttemptStmt,
-    insertSubmissionStmt,
-    ...examQs.results.map(q =>
-      answerStmt.bind(
-        submissionId,
-        q.question_id,
-        answers[q.question_id] ?? null,
-        marked_for_review.includes(q.question_id) ? 1 : 0,
-        answer_timestamps[q.question_id] ?? null
-      )
-    )
-  ];
-
-  await env.DB.batch(writeBatch);
-
-  // ── Clean up KV draft ──────────────────────────────────────
-  await env.CBT_KV.delete(`draft:${exam_id}:${authCtx.user.sub}`);
-
-  // ── Score async (non-blocking) ─────────────────────────────
-  ctx.waitUntil(scoreSubmission(submissionId, exam.config_snapshot, env));
-
-  return json({ success: true, submission_id: submissionId, message: 'Submitted successfully' });
-}
-
-// ── Async scoring ─────────────────────────────────────────────
-// Runs in background after submit response is sent.
-// Reads correct answers from D1, never from KV (security).
-
-async function scoreSubmission(
-  submissionId: string,
-  configSnapshot: string,
-  env: Env
-): Promise<void> {
-  const config: ExamConfig = configSnapshot ? JSON.parse(configSnapshot) : { marks_correct: 4, marks_wrong: 1 };
-
-  // Fetch submitted answers with correct answers from questions table
-  const rows = await env.DB.prepare(`
-    SELECT sa.question_id, sa.selected_answer, q.correct_answer, sa.submission_id
-    FROM submission_answers sa
-    JOIN questions q ON q.id = sa.question_id
-    WHERE sa.submission_id = ?
-  `).bind(submissionId).all<{
-    question_id: string;
-    selected_answer: string | null;
-    correct_answer: string;
-    submission_id: string;
-  }>();
-
-  let score = 0;
-  let totalCorrect = 0;
-  let totalWrong = 0;
-  let totalUnattempted = 0;
-
-  const updates = rows.results.map(row => {
-    let isCorrect: number | null = null;
-    let marksAwarded = 0;
-
-    if (row.selected_answer === null) {
-      totalUnattempted++;
-    } else if (row.selected_answer === row.correct_answer) {
-      isCorrect = 1;
-      marksAwarded = config.marks_correct;
-      totalCorrect++;
-      score += marksAwarded;
-    } else {
-      isCorrect = 0;
-      marksAwarded = config.negative_marking ? -config.marks_wrong : 0;
-      totalWrong++;
-      score += marksAwarded;
-    }
-
-    return env.DB.prepare(`
-      UPDATE submission_answers SET is_correct = ?, marks_awarded = ?
-      WHERE submission_id = ? AND question_id = ?
-    `).bind(isCorrect, marksAwarded, submissionId, row.question_id);
-  });
-
-  // Batch update all answers, then update submission totals
-  await env.DB.batch(updates);
-  await env.DB.prepare(`
-    UPDATE submissions SET score = ?, total_correct = ?, total_wrong = ?, total_unattempted = ?
-    WHERE id = ?
-  `).bind(score, totalCorrect, totalWrong, totalUnattempted, submissionId).run();
-
-  // ── Closed-Loop Empirical Calibration ────────────────────────
-  // Track actual student attempt counts & accuracy rate per question.
-  // Flag conflicts when observed accuracy diverges from model predictions under configurable rules.
   try {
-    const questionUpdates = rows.results
-      .filter(r => r.selected_answer !== null) // only count attempted answers
-      .map(r => {
-        const isCorr = r.selected_answer === r.correct_answer ? 1 : 0;
-        return env.DB.prepare(`
-          UPDATE questions
-          SET 
-            observed_attempt_count = COALESCE(observed_attempt_count, 0) + 1,
-            observed_accuracy_rate = (
-              (COALESCE(observed_accuracy_rate, 0.0) * COALESCE(observed_attempt_count, 0) + ?) / 
-              (COALESCE(observed_attempt_count, 0) + 1)
-            ),
-            difficulty_validation_status = CASE 
-              WHEN (COALESCE(observed_attempt_count, 0) + 1) >= 50 THEN 'empirically_validated'
-              ELSE difficulty_validation_status
-            END,
-            difficulty_review_status = CASE
-              WHEN (COALESCE(observed_attempt_count, 0) + 1) >= 50 
-                   AND difficulty = 'easy' 
-                   AND ((COALESCE(observed_accuracy_rate, 0.0) * COALESCE(observed_attempt_count, 0) + ?) / (COALESCE(observed_attempt_count, 0) + 1)) < 0.35
-                   AND COALESCE(difficulty_confidence, 0.0) >= 0.80
-              THEN 'flagged_conflict'
-              ELSE difficulty_review_status
-            END
-          WHERE id = ?
-        `).bind(isCorr, isCorr, r.question_id);
-      });
-
-    if (questionUpdates.length > 0) {
-      await env.DB.batch(questionUpdates);
-    }
-  } catch (err) {
-    console.error('Failed to update empirical calibration metrics:', err);
+    await env.SUBMISSIONS_QUEUE.send(submissionMessage);
+  } catch (queueErr: any) {
+    console.error('Failed to publish submission to SUBMISSIONS_QUEUE:', queueErr);
+    // Queue send failed -> return retryable 503 error, student draft remains intact in KV
+    return json({ error: 'Submission service temporarily unavailable. Please retry.' }, 503);
   }
 
+  // Notice: KV draft is intentionally RETAINED here as a safety net.
+  // It will be deleted post-commit by handleSubmissionsBatch once D1 persistence is confirmed.
+
+  return json({
+    success: true,
+    submission_id: submissionId,
+    status: 'queued',
+    message: 'Submission accepted and queued for processing'
+  }, 202);
 }
+
 
 // ── POST /submissions/draft ───────────────────────────────────
 // 100% Pure KV edge save. Zero D1 reads or writes. Called from auto-save hook.

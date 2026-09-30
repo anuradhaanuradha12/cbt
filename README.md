@@ -21,21 +21,82 @@ Building everything on an edge-native architecture allows for a lightweight plat
 - **AI-Assisted Question Workflow:** Proprietary Question Forge workflow for automated, high-quality question generation and review.
 - **Exam Scheduling & Waiting Room:** Scheduled exams unlock exactly at start time. Includes a pre-exam instruction screen.
 
-## Stack
+## Stack & Cost Philosophy
 
-| Layer    | Technology                                |
-| -------- | ----------------------------------------- |
-| Runtime  | Cloudflare Workers (TypeScript)           |
-| Database | Cloudflare D1 (SQLite)                    |
-| Cache    | Cloudflare KV                             |
-| Media    | Cloudflare R2                             |
-| Frontend | Vanilla HTML/CSS/JS (Zero build steps)    |
+QForge is engineered to handle up to **10,000 concurrent students** during high-stakes entrance exams with **zero Durable Objects ($0 active duration charges)**, keeping overall platform infrastructure within a **$5–10/month** envelope:
 
-## Why Edge Computing?
+| Layer | Technology | Primary Role |
+| :--- | :--- | :--- |
+| **Edge Compute** | Cloudflare Workers | Authentication, routing, server-side timer validation |
+| **Read Path / Cache** | Cloudflare KV | Immutable exam JSON payloads + ephemeral 20s autosave drafts |
+| **Burst Ingestion Buffer** | Cloudflare Queues (`cbt-submissions-queue`) | Absorbs 10K-student synchronized finish storms (`max_concurrency = 1`) |
+| **Decoupled Scoring** | Cloudflare Queues (`cbt-scoring-queue`) | Asynchronous answer scoring and difficulty recalibration |
+| **System of Record** | Cloudflare D1 | 86,700+ question bank, authoritative submissions, and analytics |
+| **Media / Assets** | Cloudflare R2 | Question and explanation diagrams |
+| **Frontend** | Cloudflare Pages / Static Assets | Vanilla PWA (zero build dependencies, instant delivery) |
 
-By moving the entire testing platform to Cloudflare Workers, we achieved:
-- **Ultra-low latency** for exam delivery and submission.
-- **Simplified scaling** without needing to manage Kubernetes clusters or auto-scaling groups.
-- **Global distribution** out-of-the-box, ensuring students experience consistent performance regardless of their physical location.
+## Scaling Architecture: Worker → Queue → D1
 
-*For internal documentation, architecture blueprints, API references, and deployment procedures, please refer to the internal repository documentation.*
+> **Core Architectural Principle:**
+> *KV handles ephemeral student state. Queues absorb the burst. Controlled consumers protect D1. D1 remains the source of truth.*
+
+```text
+                    QFORGE PLATFORM
+                          │
+                   Cloudflare Pages
+                          │
+                          ▼
+                   ┌─────────────┐
+                   │   Worker    │
+                   │  Auth / API │
+                   └──────┬──────┘
+                          │
+            ┌─────────────┼─────────────┐
+            │             │             │
+            ▼             ▼             ▼
+           KV           Cache           R2
+       Exam/Drafts     Static         Diagrams
+            │
+            ▼
+      FINAL SUBMIT (202 Accepted)
+            │
+            ▼
+   ┌───────────────────┐
+   │ Cloudflare Queue  │
+   │  cbt-submissions  │
+   └────────┬──────────┘
+            │
+      max_concurrency = 1 (Controlled write rate)
+            │
+            ▼
+   ┌───────────────────┐
+   │ Persistence Worker│
+   │ (Batched D1 Write)│
+   └────────┬──────────┘
+            │
+            ├────────► Cloudflare D1 (Authoritative Submissions & Answers)
+            ├────────► Post-Commit KV Draft Cleanup
+            │
+            ▼
+   ┌───────────────────┐
+   │ Cloudflare Queue  │
+   │    cbt-scoring    │
+   └────────┬──────────┘
+            │
+            ▼
+   ┌───────────────────┐
+   │  Scoring Consumer │
+   │ (Async Evaluation)│
+   └────────┬──────────┘
+            │
+            ▼
+   Cloudflare D1 (Scores, Analytics & Calibration)
+```
+
+### Reliability & Idempotency Guarantees
+1. **Server-Owned Submission Identity**: `submission_id` is assigned and authenticated at the edge, bound to the student's `attempt_id`.
+2. **Post-Queue-Send 202 Guarantee**: The edge API returns `202 Accepted` strictly after `Queue.send()` succeeds; if queue dispatch fails, a retryable `503 Service Unavailable` is returned while the student's draft remains safely in KV.
+3. **KV Draft Retention Safety Net**: Student answer drafts in KV are **not** dropped on submit. They remain alive until D1 commits the authoritative submission.
+4. **Multi-Entity Database Idempotency**: `ON CONFLICT` constraints across `submissions`, `submission_answers`, and `exam_attempts` guarantee that duplicate client retries or redeliveries result in exactly one finalized submission without orphaned answers.
+5. **Decoupled Scoring Domain**: Grading and question accuracy recalibration execute in an independent queue consumer, preventing scoring calculation errors from rolling back valid student submissions.
+

@@ -25,15 +25,39 @@ document.addEventListener('DOMContentLoaded', async () => {
             const examRes = await api.request(`/exams/${examId}`);
             document.getElementById('examTitle').textContent = `Results: ${examRes.exam.title}`;
 
-            // Fetch submission results
-            const resultRes = await api.request(`/submissions/${examId}`);
+            // Fetch submission results (with retry/poll if still being scored by background queue consumer)
+            let resultRes = null;
+            let attempts = 0;
+            while (attempts < 15) {
+                try {
+                    resultRes = await api.request(`/submissions/${examId}`);
+                    if (resultRes && resultRes.submission && resultRes.submission.score !== null) {
+                        break;
+                    }
+                } catch (err) {
+                    // If 404, persistence consumer may still be committing to D1
+                }
+                loadingIndicator.innerHTML = `
+                    <div class="spinner"></div>
+                    <div style="margin-top: 1rem; color: var(--primary); font-weight: 600;">
+                        Submission received! Calculating score and generating report...
+                    </div>
+                `;
+                await new Promise(r => setTimeout(r, 1500));
+                attempts++;
+            }
+
+            if (!resultRes || !resultRes.submission) {
+                throw new Error("Result is still being generated. Please refresh this page in a moment.");
+            }
+
             const { submission, answers } = resultRes;
 
             // Update stats
-            document.getElementById('totalScore').textContent = submission.score;
-            document.getElementById('totalCorrect').textContent = submission.total_correct;
-            document.getElementById('totalWrong').textContent = submission.total_wrong;
-            document.getElementById('totalUnattempted').textContent = submission.total_unattempted;
+            document.getElementById('totalScore').textContent = submission.score ?? '—';
+            document.getElementById('totalCorrect').textContent = submission.total_correct ?? 0;
+            document.getElementById('totalWrong').textContent = submission.total_wrong ?? 0;
+            document.getElementById('totalUnattempted').textContent = submission.total_unattempted ?? 0;
 
             // Render Answers
             answerList.innerHTML = '';

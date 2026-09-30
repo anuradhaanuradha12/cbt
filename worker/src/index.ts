@@ -11,6 +11,8 @@ import { usersRouter } from './routes/users';
 import { analyticsRouter } from './routes/analytics';
 import { imagesRouter } from './routes/images';
 import { forgeRouter } from './routes/forge';
+import { handleSubmissionsBatch } from './queue/submission-consumer';
+import { handleScoringBatch } from './queue/scoring-consumer';
 import { json, json404, handleOptions } from './middleware/responses';
 import type { Env } from './types';
 
@@ -101,6 +103,15 @@ export default {
       // Here you would call your email provider's API.
     } catch (e: any) {
       console.error('Failed to generate parent reports', e.message);
+    }
+  },
+
+  async queue(batch: MessageBatch<any>, env: Env, ctx: ExecutionContext): Promise<void> {
+    if (batch.queue === 'cbt-submissions-queue') {
+      return handleSubmissionsBatch(batch, env, ctx);
+    }
+    if (batch.queue === 'cbt-scoring-queue') {
+      return handleScoringBatch(batch, env, ctx);
     }
   }
 };
