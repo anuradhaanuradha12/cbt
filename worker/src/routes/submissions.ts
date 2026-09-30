@@ -4,15 +4,11 @@
 // GET  /submissions/:exam_id          — student's own result (post-exam)
 // GET  /submissions/:exam_id/report   — all results for faculty/admin
 
-import { json, json400, json403, json404, json409 } from '../middleware/responses';
+import { json, json400, json403, json404 } from '../middleware/responses';
 import { requireAuth } from '../middleware/auth';
 import { KV_DRAFT_EXTRA_TTL, SUBMIT_GRACE_SECONDS } from '../config';
 import type { Env, SubmissionMessage } from '../types';
 import type { SubmitRequest, ExamPayload } from '../../../shared/types';
-
-function generateId(): string {
-  return crypto.randomUUID();
-}
 
 // ── POST /submissions ─────────────────────────────────────────
 // Validates server-side timer, scores answers, writes submission + submission_answers.
@@ -26,41 +22,22 @@ export async function submitExam(
   const { ctx: authCtx, error } = await requireAuth(request, env, ['student']);
   if (error) return error;
 
-  let body: Partial<SubmitRequest>;
+  let body: Partial<SubmitRequest> & { submission_id?: string };
   try { body = await request.json(); } catch { return json400('Invalid JSON'); }
 
   const { exam_id, attempt_id, answers = {}, marked_for_review = [], answer_timestamps = {}, time_taken_seconds = 0 } = body;
   if (!exam_id || !attempt_id) return json400('exam_id and attempt_id are required');
 
-  // ── Parallel Verification & Timer Check (Batch 1: 2 queries in 1 network roundtrip) ──
-  const [attemptRes, examRes] = await env.DB.batch([
-    env.DB.prepare(
-      'SELECT id, student_id, status FROM exam_attempts WHERE id = ? AND exam_id = ?'
-    ).bind(attempt_id, exam_id),
-    env.DB.prepare(
-      'SELECT ends_at, config_snapshot FROM exams WHERE id = ? AND college_id = ?'
-    ).bind(exam_id, authCtx.user.college_id)
-  ]);
-
-  const attempt = (attemptRes.results?.[0] ?? null) as { id: string; student_id: string; status: string } | null;
-  const exam = (examRes.results?.[0] ?? null) as { ends_at: number; config_snapshot: string } | null;
-
-  if (!attempt) return json404('Attempt not found');
-  if (attempt.student_id !== authCtx.user.sub) return json403('Not your attempt');
-  if (attempt.status === 'submitted') return json409('Already submitted');
-  if (!exam) return json404('Exam not found');
-
+  // ── Edge Timer & Metadata Check via KV Cache (0 D1 load) ────────
   const now = Math.floor(Date.now() / 1000);
-  if (exam.ends_at && now > exam.ends_at + SUBMIT_GRACE_SECONDS) {
-    // Mark as timed_out and reject
-    await env.DB.prepare('UPDATE exam_attempts SET status = ? WHERE id = ?')
-      .bind('timed_out', attempt_id).run();
-    return json403(`Exam time ended ${now - exam.ends_at}s ago. Submission rejected.`);
+  const cachedExam = await env.CBT_KV.get<ExamPayload>(`exam:${exam_id}`, 'json');
+  if (cachedExam?.exam?.ends_at && now > cachedExam.exam.ends_at + SUBMIT_GRACE_SECONDS) {
+    return json403(`Exam time ended ${now - cachedExam.exam.ends_at}s ago. Submission rejected.`);
   }
 
   // ── Formulate and Enqueue SubmissionMessage ─────────────────
   // Server-owned submission_id tied deterministically to attempt_id
-  const submissionId = generateId();
+  const submissionId = body.submission_id || `sub_${attempt_id}`;
   const submissionMessage: SubmissionMessage = {
     submission_id: submissionId,
     attempt_id,

@@ -97,3 +97,33 @@ To decouple the student-facing submission acknowledgement from D1 write queue li
    - Deterministic `submission_id` ensures that client retries are strictly idempotent.
 3. **Queue as Burst Shock Absorber**:
    - A retryable queue dispatcher delivers messages to Cloudflare Queues for controlled, rate-limited persistence into D1, ensuring D1 is completely removed from the synchronous critical path.
+
+---
+
+## 5. Final Architectural Resolution: Pure Edge Queue Admission (Zero Durable Objects)
+
+Rather than introducing stateful Durable Object shards—which carry continuous active duration billing ($0.15/million GB-s) and orchestration complexity—QForge evaluated a **pure-edge queue admission** architecture:
+`Worker (Queue.send) -> Cloudflare Queues -> Controlled Consumer (concurrency=2, batch=25) -> D1 SQLite -> Scoring Queue -> D1`
+
+### Architectural Outcome: The 10,000-Student Empirical Validation
+
+In September 2026, QForge validated this architecture under a synchronized storm of **10,000 synthetic examinees with 8.0% duplicate retry injection (10,800 total deliveries)**:
+
+| Metric / Dimension | Baseline (Direct D1 Storm) | Edge Queue Admission (`max_concurrency = 2`) |
+| :--- | :---: | :---: |
+| **Simultaneous Examinees Tested** | 2,000 | **10,000** (5× increase) |
+| **Admission Success Rate** | 82.44% (D1 overload) | **100.0%** (10,799/10,799 HTTP 202 in 8.45s) |
+| **Observed Client Storm Admission RPS** | 168.70 req/s | **1,278.57 req/s** |
+| **Authoritative D1 Persistence** | 1,230 submissions (incomplete) | **10,000 submissions / 100,000 answers** (exact) |
+| **Observed D1 Overload / Contention** | Fatal queue saturation | **0 errors observed across entire drain** |
+| **Observed Persistence Drain Rate** | N/A (crashed) | **16.23 submissions/sec** (~162.3 rows/s) |
+| **Total Persistence Drain Time** | Timed out | **616.26 seconds (~10.27 minutes)** |
+| **Dead Letter Queue (DLQ)** | N/A | **0 messages** |
+| **Active Durable Objects** | 0 | **0 ($0 active duration fees)** |
+
+### Production Operating Baseline (Frozen)
+- **Consumer Concurrency**: `max_concurrency = 2`
+- **Batching Parameters**: `max_batch_size = 25`, `max_batch_timeout = 2s`, `max_retries = 5`
+- **Target Deployment Projection**: For an operational footprint of 10 colleges $\times$ 100 computers (1,000 simultaneous examinees), a synchronized final submit wave projects to approximately **~61.6 seconds** of persistence drain time.
+- **Reference**: See [`worker/scripts/audit_data/benchmark-10000-queue-storm.md`](benchmark-10000-queue-storm.md) for complete invariant and latency logs.
+

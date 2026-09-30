@@ -58,19 +58,20 @@ export async function handleSubmissionsBatch(
     const p = msg.body;
     const now = Math.floor(Date.now() / 1000);
 
-    // 1. Finalize attempt (idempotent, only if not already submitted)
-    persistenceStmts.push(
-      env.DB.prepare(
-        "UPDATE exam_attempts SET status = 'submitted', last_seen_at = ? WHERE id = ? AND status != 'submitted'"
-      ).bind(now, p.attempt_id)
-    );
-
-    // 2. Insert submission record (idempotent ON CONFLICT DO NOTHING)
+    // 1. Finalize attempt (authoritative check: verifies attempt belongs to this student and exam, idempotent)
     persistenceStmts.push(
       env.DB.prepare(`
-        INSERT INTO submissions (id, attempt_id, exam_id, student_id, time_taken_seconds, college_id, submitted_at)
+        UPDATE exam_attempts 
+        SET status = 'submitted', last_seen_at = ? 
+        WHERE id = ? AND student_id = ? AND exam_id = ? AND status != 'submitted'
+      `).bind(now, p.attempt_id, p.student_id, p.exam_id)
+    );
+
+    // 2. Insert submission record (idempotent INSERT OR IGNORE)
+    persistenceStmts.push(
+      env.DB.prepare(`
+        INSERT OR IGNORE INTO submissions (id, attempt_id, exam_id, student_id, time_taken_seconds, college_id, submitted_at)
         VALUES (?, ?, ?, ?, ?, ?, ?)
-        ON CONFLICT(id) DO NOTHING
       `).bind(
         p.submission_id,
         p.attempt_id,
@@ -82,14 +83,13 @@ export async function handleSubmissionsBatch(
       )
     );
 
-    // 3. Insert all submission answers (even unattempted, ON CONFLICT DO NOTHING)
+    // 3. Insert all submission answers (even unattempted, idempotent INSERT OR IGNORE)
     const qList = examQuestionsMap.get(p.exam_id) || Object.keys(p.answers || {});
     for (const qId of qList) {
       persistenceStmts.push(
         env.DB.prepare(`
-          INSERT INTO submission_answers (submission_id, question_id, selected_answer, marked_for_review, answered_at)
+          INSERT OR IGNORE INTO submission_answers (submission_id, question_id, selected_answer, marked_for_review, answered_at)
           VALUES (?, ?, ?, ?, ?)
-          ON CONFLICT(submission_id, question_id) DO NOTHING
         `).bind(
           p.submission_id,
           qId,

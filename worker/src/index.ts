@@ -55,10 +55,120 @@ export default {
       response ??= await imagesRouter(request, env, pathname);
       response ??= await forgeRouter(request, env, pathname);
 
+      if (pathname === '/admin/reconciliation/reset-dlq' && request.method === 'POST') {
+        await env.CBT_KV.put('dlq_counter:cbt-submissions-dlq', '0');
+        await env.CBT_KV.put('dlq_counter:cbt-scoring-dlq', '0');
+        return json({ reset: true, timestamp: new Date().toISOString() });
+      }
+
       if (pathname === '/admin/reconciliation' && request.method === 'GET') {
         const urlParams = new URL(request.url).searchParams;
         const examId = urlParams.get('exam_id');
-        
+        const format = urlParams.get('format');
+        const expectedStudents = urlParams.get('expected_students');
+
+        if (format === 'audit' && examId) {
+          const [
+            subRes,
+            uniqStudentRes,
+            uniqAttemptRes,
+            uniqSubIdRes,
+            ansRes,
+            finAttemptsRes,
+            scoredRes,
+            dupSubIdRes,
+            multiStudentRes,
+            multiAttemptRes,
+            wrongAnsCountRes,
+            notFinRes
+          ] = await env.DB.batch<{ count: number }>([
+            env.DB.prepare('SELECT COUNT(*) as count FROM submissions WHERE exam_id = ?').bind(examId),
+            env.DB.prepare('SELECT COUNT(DISTINCT student_id) as count FROM submissions WHERE exam_id = ?').bind(examId),
+            env.DB.prepare('SELECT COUNT(DISTINCT attempt_id) as count FROM submissions WHERE exam_id = ?').bind(examId),
+            env.DB.prepare('SELECT COUNT(DISTINCT id) as count FROM submissions WHERE exam_id = ?').bind(examId),
+            env.DB.prepare('SELECT COUNT(*) as count FROM submission_answers WHERE submission_id IN (SELECT id FROM submissions WHERE exam_id = ?)').bind(examId),
+            env.DB.prepare("SELECT COUNT(*) as count FROM exam_attempts WHERE exam_id = ? AND status = 'submitted'").bind(examId),
+            env.DB.prepare('SELECT COUNT(*) as count FROM submissions WHERE exam_id = ? AND score IS NOT NULL').bind(examId),
+            env.DB.prepare('SELECT COUNT(*) as count FROM (SELECT id FROM submissions WHERE exam_id = ? GROUP BY id HAVING COUNT(*) > 1)').bind(examId),
+            env.DB.prepare('SELECT COUNT(*) as count FROM (SELECT student_id FROM submissions WHERE exam_id = ? GROUP BY student_id HAVING COUNT(*) > 1)').bind(examId),
+            env.DB.prepare('SELECT COUNT(*) as count FROM (SELECT attempt_id FROM submissions WHERE exam_id = ? GROUP BY attempt_id HAVING COUNT(*) > 1)').bind(examId),
+            env.DB.prepare('SELECT COUNT(*) as count FROM (SELECT s.id FROM submissions s LEFT JOIN submission_answers sa ON sa.submission_id = s.id WHERE s.exam_id = ? GROUP BY s.id HAVING COUNT(sa.question_id) != 10)').bind(examId),
+            env.DB.prepare("SELECT COUNT(*) as count FROM submissions s JOIN exam_attempts a ON a.id = s.attempt_id WHERE s.exam_id = ? AND a.status != 'submitted'").bind(examId)
+          ]);
+
+          const submissions = Number(subRes.results?.[0]?.count ?? 0);
+          const uniqueStudents = Number(uniqStudentRes.results?.[0]?.count ?? 0);
+          const uniqueAttempts = Number(uniqAttemptRes.results?.[0]?.count ?? 0);
+          const uniqueSubIds = Number(uniqSubIdRes.results?.[0]?.count ?? 0);
+          const answers = Number(ansRes.results?.[0]?.count ?? 0);
+          const finalizedAttempts = Number(finAttemptsRes.results?.[0]?.count ?? 0);
+          const scoredSubmissions = Number(scoredRes.results?.[0]?.count ?? 0);
+          const duplicateSubIds = Number(dupSubIdRes.results?.[0]?.count ?? 0);
+          const multiStudentSubs = Number(multiStudentRes.results?.[0]?.count ?? 0);
+          const multiAttemptSubs = Number(multiAttemptRes.results?.[0]?.count ?? 0);
+          const wrongAnsCounts = Number(wrongAnsCountRes.results?.[0]?.count ?? 0);
+          const unfinalizedAttempts = Number(notFinRes.results?.[0]?.count ?? 0);
+
+          const expectedCount = expectedStudents ? Number(expectedStudents) : submissions;
+          const expectedAnswers = expectedCount * 10;
+
+          const subDlqCount = Number(await env.CBT_KV.get('dlq_counter:cbt-submissions-dlq') || '0');
+          const scoreDlqCount = Number(await env.CBT_KV.get('dlq_counter:cbt-scoring-dlq') || '0');
+
+          const invariantsPass = 
+            submissions === expectedCount &&
+            uniqueStudents === expectedCount &&
+            uniqueAttempts === expectedCount &&
+            uniqueSubIds === expectedCount &&
+            answers === expectedAnswers &&
+            finalizedAttempts === expectedCount &&
+            duplicateSubIds === 0 &&
+            multiStudentSubs === 0 &&
+            multiAttemptSubs === 0 &&
+            wrongAnsCounts === 0 &&
+            unfinalizedAttempts === 0 &&
+            subDlqCount === 0;
+
+          return json({
+            exam_id: examId,
+            expected: {
+              students: expectedCount,
+              submissions: expectedCount,
+              answers: expectedAnswers,
+              finalized_attempts: expectedCount
+            },
+            actual: {
+              submissions,
+              unique_students: uniqueStudents,
+              unique_attempts: uniqueAttempts,
+              unique_submission_ids: uniqueSubIds,
+              answers,
+              finalized_attempts: finalizedAttempts,
+              scored_submissions: scoredSubmissions
+            },
+            invariants: {
+              submission_count_exact: submissions === expectedCount,
+              unique_student_count_exact: uniqueStudents === expectedCount,
+              unique_attempt_count_exact: uniqueAttempts === expectedCount,
+              unique_submission_id_exact: uniqueSubIds === expectedCount,
+              answer_count_exact: answers === expectedAnswers,
+              finalized_attempt_count_exact: finalizedAttempts === expectedCount,
+              duplicate_submission_ids: duplicateSubIds,
+              students_with_multiple_submissions: multiStudentSubs,
+              attempts_with_multiple_submissions: multiAttemptSubs,
+              submissions_with_wrong_answer_count: wrongAnsCounts,
+              attempts_not_finalized_for_submissions: unfinalizedAttempts
+            },
+            queue_observation: {
+              submission_dlq_messages: subDlqCount,
+              scoring_dlq_messages: scoreDlqCount,
+              measurement_source: "dlq_consumer_kv_counter",
+              observed_at: new Date().toISOString()
+            },
+            status: invariantsPass ? "PASS" : "DRAINING_OR_FAIL"
+          });
+        }
+
         const countQuery = examId 
           ? `SELECT 
                (SELECT COUNT(*) FROM exam_attempts WHERE exam_id = ?) as attempts,
@@ -108,20 +218,13 @@ export default {
   async scheduled(event: ScheduledEvent, env: Env) {
     // Cron triggered every week (e.g. Sunday midnight)
     console.log(`Cron triggered at ${event.cron}`);
-
-    // In a production app, we would fetch all students, aggregate their performance
-    // over the last week, and send an email via SendGrid/AWS SES.
-    
-    // For this MVP, we simulate the workload:
     try {
       const result = await env.DB.prepare(`
         SELECT COUNT(*) as recent_submissions 
         FROM submissions 
         WHERE submitted_at > ?
       `).bind(Math.floor(Date.now() / 1000) - 7 * 24 * 60 * 60).first();
-      
-      console.log(`Found ${result?.recent_submissions || 0} recent submissions. Simulating report generation...`);
-      // Here you would call your email provider's API.
+      console.log(`Found ${result?.recent_submissions || 0} recent submissions.`);
     } catch (e: any) {
       console.error('Failed to generate parent reports', e.message);
     }
@@ -133,6 +236,13 @@ export default {
     }
     if (batch.queue === 'cbt-scoring-queue') {
       return handleScoringBatch(batch, env, ctx);
+    }
+    if (batch.queue === 'cbt-submissions-dlq' || batch.queue === 'cbt-scoring-dlq') {
+      const key = `dlq_counter:${batch.queue}`;
+      const current = Number(await env.CBT_KV.get(key) || '0');
+      await env.CBT_KV.put(key, String(current + batch.messages.length));
+      batch.ackAll();
+      return;
     }
   }
 };

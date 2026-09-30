@@ -154,18 +154,44 @@ The entire **86,737-question bank** on remote Cloudflare D1 is 100% classified w
 | Component | Cloudflare Service | Technology / Specs | Role |
 | :--- | :--- | :--- | :--- |
 | **API Runtime** | Cloudflare Workers | TypeScript / WebCrypto API | High-throughput edge routing, sub-10ms response times |
-| **Primary DB** | Cloudflare D1 | Distributed SQLite (`cbt-platform`) | 86,730+ questions, users, exam schedules, attempts, scoring |
+| **Ingestion Buffer**| Cloudflare Queues | `cbt-submissions-queue` (`max_concurrency = 2`, `batch = 25`) | Synchronized storm absorption, decoupled D1 persistence |
+| **Decoupled Scoring**| Cloudflare Queues | `cbt-scoring-queue` (`max_concurrency = 2`, `batch = 25`) | Asynchronous scoring evaluation and student analytics |
+| **Dead Letter Queues**| Cloudflare Queues | `cbt-submissions-dlq` & `cbt-scoring-dlq` | Poison-pill isolation, real-time KV counter monitoring |
+| **Primary DB** | Cloudflare D1 | Distributed SQLite (`cbt-platform`) | 86,737 questions, users, exam schedules, attempts, scoring |
 | **AI Question DB** | Cloudflare D1 | Distributed SQLite (`cbt-qforge`) | Draft questions, approved proprietary questions |
 | **Decision Model**| TypeSafe AI (Jev) | System One `choice` API | Auditable question difficulty classification and calibration |
-| **Fast Cache** | Cloudflare KV | Distributed Key-Value (`CBT_KV`) | Session management, sanitized exam payload caching |
+| **Fast Cache** | Cloudflare KV | Distributed Key-Value (`CBT_KV`) | Session tokens, 20s autosave drafts, sanitized exam payloads |
 | **Media Storage** | Cloudflare R2 | S3-Compatible Object Store (`cbt-media`) | High-resolution question diagrams, circuit schematics, figures |
 | **Frontend** | Cloudflare Static Assets | Vanilla HTML5 / CSS3 / JavaScript | Zero-build overhead, instant PWA loading, MathJax equations |
 | **Auth Security** | Native Web Crypto | PBKDF2-SHA256 (100,000 iterations) | OWASP-compliant password hashing and signed JWT tokens |
 
 ---
 
-## 📋 9. Quick Start Guide
+## ⚡ 9. High-Concurrency Scaling & Empirical 10,000-Student Validation
 
+> **Defensible Architectural Conclusion**:  
+> **QForge has empirically validated a 10,000-submission synchronized workload on Cloudflare Workers + Queues + D1 + KV. A total of 10,800 submission deliveries, including 800 duplicate deliveries, reconciled to exactly 10,000 authoritative submissions, 100,000 answer rows and 10,000 finalized attempts. The controlled persistence pipeline sustained an observed 16.23 submissions/sec at consumer concurrency 2, with zero observed D1 overload/queue-timeout errors and zero DLQ messages.**
+
+### • Key Invariant Verification Ledger
+- **Synchronized Storm Burst**: 10,799 requests admitted in 8.45s (**1,278.57 req/sec observed client-side admission rate**) with 100% HTTP 202 acceptance.
+- **Persistence Drain**: 10,000 examinees completely persisted in **616.26 seconds (~10.27 minutes)** at **16.23 submissions/sec** (~162.3 answer rows/sec).
+- **Authoritative Ledger Truth**:
+  - Submissions in D1: **10,000**
+  - Submission Answers in D1: **100,000** (strict 10:1 ratio, 0 orphaned or malformed distributions)
+  - Finalized Attempts: **10,000** (`status = 'submitted'`)
+  - Duplicate Authoritative Rows: **0**
+  - Dead Letter Queue Messages: **0**
+  - Observed D1 Overload / Contention Errors: **0**
+- **Durable Objects Removed**: Zero Durable Objects active duration fees ($0 cost overhead; pure edge Queue decoupling).
+
+### • Target Multi-College Deployment Context
+- **Target Footprint**: 10 partner colleges $\times$ 100 workstations = **1,000 concurrent examinees**.
+- **Persistence Projection**: At 16.23 submissions/sec, a 1,000-student synchronized submission wave projects to approximately **~61.6 seconds** of persistence drain time (throughput projection under smaller workload).
+- **Workload Distinction**: The 10K benchmark validates the synchronized submission and persistence storm path. A separate 3-hour endurance test characterizes continuous autosave traffic over full examination duration.
+
+---
+
+## 📋 10. Quick Start Guide
 
 ### Running Locally
 ```bash

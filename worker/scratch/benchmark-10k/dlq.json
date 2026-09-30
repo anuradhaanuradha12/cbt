@@ -1,0 +1,6 @@
+{
+  "submission_dlq_messages": 0,
+  "scoring_dlq_messages": 0,
+  "measurement_source": "dlq_consumer_kv_counter",
+  "observed_at": "2026-09-30T05:40:37.159Z"
+}

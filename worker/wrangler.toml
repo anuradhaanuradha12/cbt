@@ -51,6 +51,10 @@ directory = "../frontend"
 binding = "ASSETS"
 
 [[migrations]]
+tag = "v1"
+new_classes = ["SubmissionShard"]
+
+[[migrations]]
 tag = "v2-drop-durable-objects"
 deleted_classes = ["SubmissionShard"]
 
@@ -69,7 +73,7 @@ queue = "cbt-submissions-queue"
 max_batch_size = 25
 max_batch_timeout = 2
 max_retries = 5
-max_concurrency = 1
+max_concurrency = 2
 dead_letter_queue = "cbt-submissions-dlq"
 
 [[queues.consumers]]
@@ -79,6 +83,16 @@ max_batch_timeout = 5
 max_retries = 3
 max_concurrency = 2
 dead_letter_queue = "cbt-scoring-dlq"
+
+[[queues.consumers]]
+queue = "cbt-submissions-dlq"
+max_batch_size = 10
+max_batch_timeout = 2
+
+[[queues.consumers]]
+queue = "cbt-scoring-dlq"
+max_batch_size = 10
+max_batch_timeout = 2
 
 
 

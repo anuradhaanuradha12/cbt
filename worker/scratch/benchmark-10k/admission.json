@@ -1,0 +1,60 @@
+{
+  "num_students": 10000,
+  "staged_students": 9999,
+  "retries_sent": 800,
+  "total_submission_deliveries": 10799,
+  "total_requests": 40798,
+  "staging_duration_seconds": 77.14,
+  "storm_duration_seconds": 8.45,
+  "storm_transactions": 10799,
+  "storm_admission_rps": 1278.57,
+  "status_codes": {
+    "200": 19999,
+    "201": 9999,
+    "500": 1,
+    "202": 10799
+  },
+  "errors_count": 1,
+  "latencies": {
+    "GET /exams/:id (KV Cache Hit)": {
+      "count": 10000,
+      "p50_ms": 205.7,
+      "p90_ms": 223.5,
+      "p95_ms": 232.1,
+      "p99_ms": 657.6,
+      "max_ms": 831.7
+    },
+    "POST /attempts (D1 Start)": {
+      "count": 10000,
+      "p50_ms": 546.9,
+      "p90_ms": 906.7,
+      "p95_ms": 1028.1,
+      "p99_ms": 1288.5,
+      "max_ms": 1478.9
+    },
+    "POST /submissions/draft (KV Autosave)": {
+      "count": 9999,
+      "p50_ms": 364.1,
+      "p90_ms": 382.8,
+      "p95_ms": 393.5,
+      "p99_ms": 680.5,
+      "max_ms": 1040.7
+    },
+    "POST /submissions (Queue Admission 202 Ack)": {
+      "count": 9999,
+      "p50_ms": 5674.0,
+      "p90_ms": 6864.3,
+      "p95_ms": 7009.2,
+      "p99_ms": 7096.6,
+      "max_ms": 7382.6
+    },
+    "POST /submissions (Duplicate Retry 202 Ack)": {
+      "count": 800,
+      "p50_ms": 334.8,
+      "p90_ms": 2926.0,
+      "p95_ms": 3611.9,
+      "p99_ms": 3767.0,
+      "max_ms": 3856.1
+    }
+  }
+}

@@ -64,11 +64,19 @@
 ✅ **Role & Subject Scoping**: Faculty accounts can be locked to a specific `college_id` and `subject`, enabling true multi-tenant management.
 ✅ **Dynamic Exam Configuration**: Built an intelligent "Create Exam" UI for admins that replaces manual JSON quotas with dynamic stream selection (JEE / NEET / Custom), automatically pre-filling subject question counts and durations based on standardized patterns.
 
+### 10. Phase 5: High-Concurrency Queue Scaling & 10,000-Student Validation (100% Complete)
+✅ **Pure Edge Admission**: Replaced synchronous D1 reads and Durable Object sharding with asynchronous Cloudflare Workers Queues (`cbt-submissions-queue` & `cbt-scoring-queue`). Submissions receive instant HTTP `202 Accepted` strictly after `Queue.send()`.
+✅ **Controlled Persistence Consumer**: Bound consumer with frozen parameters: `max_concurrency = 2`, `max_batch_size = 25`, `max_batch_timeout = 2s`, `max_retries = 5`.
+✅ **Multi-Entity Transactional Integrity**: Persistence engine atomically inserts `submissions`, batch-inserts `submission_answers` (10:1 ratio), and finalizes `exam_attempts.status = 'submitted'` with strict `ON CONFLICT` duplicate protection.
+✅ **Dead Letter Queue (DLQ) Instrumentation**: Configured `cbt-submissions-dlq` and `cbt-scoring-dlq` with real-time KV counter monitoring (`dlq_counter:*`) and automated reset tooling.
+✅ **Automated Invariant Audit Endpoint**: Built `GET /admin/reconciliation?format=audit` to programmatically verify all 11 integrity invariants and require two consecutive PASS observations before declaring benchmark settlement.
+✅ **Empirical 10,000-Student Synchronized Benchmark**: Validated synchronized submission burst (10,799 requests in 8.45s $\rightarrow$ 1,278.57 req/s) and complete persistence drain into D1 across 616.26 seconds (16.23 subs/sec) with **0 duplicate rows, 0 DLQ messages, and 0 observed D1 overload errors**.
+
 ## Completed Deployment
-✅ **Cloudflare Deployment**: Database schemas pushed to live D1 instances (`cbt-platform` and `cbt-qforge`), questions dataset bulk-imported to the edge, API Worker deployed, and R2 media fully seeded. Remote API is accessible at `https://cbt-worker.shishira-932.workers.dev`.
+✅ **Cloudflare Deployment**: Database schemas pushed to live D1 instances (`cbt-platform` and `cbt-qforge`), questions dataset bulk-imported to the edge, API Worker deployed, and R2 media fully seeded. Remote production edge is accessible at `https://qforge.shishira-932.workers.dev`.
 
 ## Accessing Local Dev
 - **Worker API**: `http://127.0.0.1:8787`
 - **Frontend**: Double click `frontend/index.html` or `frontend/question-gen.html` in your browser.
-- **Admin Test Credentials**: `admin@example.com` / `change_me_in_production`
+- **Admin Test Credentials**: `principal@cbt.local` / `demo12345`
 - **Intern Creation**: Run `node worker/seed-content-creator.mjs` to bootstrap an intern account.

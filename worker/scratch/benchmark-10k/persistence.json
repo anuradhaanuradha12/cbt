@@ -1,0 +1,7 @@
+{
+  "exam_id": "bbf22745-8a8b-4a85-bcfc-a227dd6c3fe4",
+  "num_students": 10000,
+  "total_drain_time_seconds": 616.26,
+  "drain_rate_subs_per_sec": 16.23,
+  "benchmark_settled": true
+}

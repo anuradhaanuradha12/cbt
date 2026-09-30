@@ -75,13 +75,15 @@ POST /submissions (Queue Admission 202)  | 2000   | 4870.3    | 10456.5   | 1046
 
 ---
 
-## 5. Architectural Findings & Extrapolations
+## 5. Architectural Findings & Steady-State Projections
 
-1. **Near-Linear D1 Scaling at Concurrency 2**:
-   - D1 handled 2 parallel consumer workers committing batches of 25 without any internal queue overload, accelerating drain rate from **~10.5 sub/s to ~20.2 sub/s** (a **1.92x improvement**).
-2. **Admission Tail Latency Cut in Half**:
-   - Faster consumer drain relieved edge contention, dropping p90/p95 client ACK latencies from **~8.9s down to ~4.3s**.
-3. **10,000-Student Drain Time Projection**:
-   - At `max_concurrency = 1`: 10,000 / 10.5 sub/s = **~15.8 minutes**.
-   - At `max_concurrency = 2`: 10,000 / 20.2 sub/s = **~8.2 minutes**.
+1. **Near-2× Persistence Throughput at Concurrency 2**:
+   - D1 handled 2 parallel consumer workers committing batches of 25 without any internal queue overload, accelerating the consumer pipeline drain rate from **~10.5 sub/s to ~20.2 sub/s** (a **1.92× improvement** under the tested workload).
+2. **Admission ACK Latency Distribution**:
+   - Concurrency 2 coincided with substantially lower measured admission ACK latency (p90/p95 dropping to ~4.3s) while the load generator remained the same; the ACK measurement is still subject to the harness's 200-connection ceiling.
+3. **Steady-State 10,000-Student Drain Time Projections**:
+   - At the observed 2K-test persistence rates, the simple steady-state projection is:
+     - At `max_concurrency = 1`: 10,000 / 10.5 sub/s = **~15.9 minutes**.
+     - At `max_concurrency = 2`: 10,000 / 20.2 sub/s = **~8.3 minutes**.
+
 

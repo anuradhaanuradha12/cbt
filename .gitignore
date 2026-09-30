@@ -39,3 +39,7 @@ INTERNAL_README.md
 # Large audit binaries
 worker/scripts/audit_data/*.parquet
 worker/scripts/audit_data/*.csv
+
+# Python
+__pycache__/
+*.pyc

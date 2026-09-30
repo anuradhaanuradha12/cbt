@@ -1,0 +1,38 @@
+{
+  "exam_id": "bbf22745-8a8b-4a85-bcfc-a227dd6c3fe4",
+  "expected": {
+    "students": 10000,
+    "submissions": 10000,
+    "answers": 100000,
+    "finalized_attempts": 10000
+  },
+  "actual": {
+    "submissions": 10000,
+    "unique_students": 10000,
+    "unique_attempts": 10000,
+    "unique_submission_ids": 10000,
+    "answers": 100000,
+    "finalized_attempts": 10000,
+    "scored_submissions": 681
+  },
+  "invariants": {
+    "submission_count_exact": true,
+    "unique_student_count_exact": true,
+    "unique_attempt_count_exact": true,
+    "unique_submission_id_exact": true,
+    "answer_count_exact": true,
+    "finalized_attempt_count_exact": true,
+    "duplicate_submission_ids": 0,
+    "students_with_multiple_submissions": 0,
+    "attempts_with_multiple_submissions": 0,
+    "submissions_with_wrong_answer_count": 0,
+    "attempts_not_finalized_for_submissions": 0
+  },
+  "queue_observation": {
+    "submission_dlq_messages": 0,
+    "scoring_dlq_messages": 0,
+    "measurement_source": "dlq_consumer_kv_counter",
+    "observed_at": "2026-09-30T05:40:37.159Z"
+  },
+  "status": "PASS"
+}

@@ -28,9 +28,9 @@ const args = process.argv.slice(2);
 const isRemote = args.includes('--remote');
 const isDryRun = args.includes('--dry-run');
 const isAll = args.includes('--all');
-const limitArg = args.find(a => a.startsWith('--limit='));
+const limitArg = args.find((a: string) => a.startsWith('--limit='));
 const targetLimit = limitArg ? parseInt(limitArg.split('=')[1], 10) : 500;
-const subjectArg = args.find(a => a.startsWith('--subject='));
+const subjectArg = args.find((a: string) => a.startsWith('--subject='));
 const targetSubject = subjectArg ? subjectArg.split('=')[1].toLowerCase() : null;
 
 const BATCH_SIZE = 45;       // Number of concurrent Jev requests per burst
