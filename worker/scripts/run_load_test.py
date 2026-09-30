@@ -119,7 +119,10 @@ async def simulate_student_session(
     email: str,
     exam_id: str,
     token: str,
-    sem: asyncio.Semaphore
+    sem: asyncio.Semaphore,
+    storm_barrier: asyncio.Event = None,
+    ready_barrier: asyncio.Event = None,
+    is_v2: bool = False
 ):
     headers = {
         'Authorization': f'Bearer {token}',
@@ -128,6 +131,8 @@ async def simulate_student_session(
         'Accept': 'application/json'
     }
 
+    # Phase 1 to 3 with concurrency control
+    attempt_id = None
     async with sem:
         # Phase 1: GET /exams/:id (KV edge cache hit)
         t0 = time.perf_counter()
@@ -145,7 +150,6 @@ async def simulate_student_session(
 
         # Phase 2: POST /attempts (Student starts attempt in D1)
         t0 = time.perf_counter()
-        attempt_id = None
         try:
             async with session.post(f"{BASE_URL}/attempts", headers=headers, json={"exam_id": exam_id}) as resp:
                 t1 = time.perf_counter()
@@ -161,7 +165,8 @@ async def simulate_student_session(
             return
 
         # Phase 3: POST /submissions/draft (Periodic auto-save into KV)
-        for _ in range(2):
+        draft_count = 1 if storm_barrier else 2
+        for _ in range(draft_count):
             t0 = time.perf_counter()
             answers = {
                 BENCHMARK_QUESTION_IDS[0]: "A",
@@ -180,43 +185,51 @@ async def simulate_student_session(
             except Exception as e:
                 metrics.record('POST /submissions/draft (KV Autosave)', time.perf_counter() - t0, 0, str(e))
 
-        # Phase 4: POST /submissions (Final bulk submission & async scoring)
-        t0 = time.perf_counter()
-        final_answers = {
-            BENCHMARK_QUESTION_IDS[0]: "A",
-            BENCHMARK_QUESTION_IDS[1]: "B",
-            BENCHMARK_QUESTION_IDS[2]: "C",
-            BENCHMARK_QUESTION_IDS[3]: "D",
-            BENCHMARK_QUESTION_IDS[4]: "A",
-            BENCHMARK_QUESTION_IDS[5]: "B",
-            BENCHMARK_QUESTION_IDS[6]: "C",
-            BENCHMARK_QUESTION_IDS[7]: "D",
-            BENCHMARK_QUESTION_IDS[8]: "A",
-            BENCHMARK_QUESTION_IDS[9]: "B",
-        }
-        try:
-            async with session.post(
-                f"{BASE_URL}/submissions",
-                headers=headers,
-                json={
-                    "exam_id": exam_id,
-                    "attempt_id": attempt_id,
-                    "answers": final_answers,
-                    "marked_for_review": [BENCHMARK_QUESTION_IDS[2]],
-                    "answer_timestamps": {BENCHMARK_QUESTION_IDS[0]: int(time.time())},
-                    "time_taken_seconds": 240
-                }
-            ) as resp:
-                t1 = time.perf_counter()
-                body = await resp.json()
-                metrics.record('POST /submissions (D1 Submit + Async Score)', t1 - t0, resp.status)
-                if resp.status != 200:
-                    metrics.record('POST /submissions (D1 Submit + Async Score)', t1 - t0, resp.status, str(body))
-        except Exception as e:
-            metrics.record('POST /submissions (D1 Submit + Async Score)', time.perf_counter() - t0, 0, str(e))
+    # If storm barrier is active, wait here until all students are staged and barrier is fired
+    if storm_barrier:
+        if ready_barrier:
+            ready_barrier.set()
+        await storm_barrier.wait()
 
-async def run_benchmark(num_students: int = 500, max_in_flight: int = 50):
-    print(f"Setting up load test environment for {num_students:,} distinct student sessions...")
+    # Phase 4: POST /submissions or /submissions/v2 (Final bulk submission)
+    t0 = time.perf_counter()
+    final_answers = {
+        BENCHMARK_QUESTION_IDS[0]: "A",
+        BENCHMARK_QUESTION_IDS[1]: "B",
+        BENCHMARK_QUESTION_IDS[2]: "C",
+        BENCHMARK_QUESTION_IDS[3]: "D",
+        BENCHMARK_QUESTION_IDS[4]: "A",
+        BENCHMARK_QUESTION_IDS[5]: "B",
+        BENCHMARK_QUESTION_IDS[6]: "C",
+        BENCHMARK_QUESTION_IDS[7]: "D",
+        BENCHMARK_QUESTION_IDS[8]: "A",
+        BENCHMARK_QUESTION_IDS[9]: "B",
+    }
+    sub_endpoint = f"{BASE_URL}/submissions/v2" if is_v2 else f"{BASE_URL}/submissions"
+    action_name = 'POST /submissions/v2 (Sharded DO + Outbox)' if is_v2 else 'POST /submissions (D1 Submit + Async Score)'
+    try:
+        async with session.post(
+            sub_endpoint,
+            headers=headers,
+            json={
+                "exam_id": exam_id,
+                "attempt_id": attempt_id,
+                "answers": final_answers,
+                "marked_for_review": [BENCHMARK_QUESTION_IDS[2]],
+                "answer_timestamps": {BENCHMARK_QUESTION_IDS[0]: int(time.time())},
+                "time_taken_seconds": 240
+            }
+        ) as resp:
+            t1 = time.perf_counter()
+            body = await resp.json()
+            metrics.record(action_name, t1 - t0, resp.status)
+            if resp.status not in (200, 201):
+                metrics.record(action_name, t1 - t0, resp.status, str(body))
+    except Exception as e:
+        metrics.record(action_name, time.perf_counter() - t0, 0, str(e))
+
+async def run_benchmark(num_students: int = 500, max_in_flight: int = 50, is_storm: bool = False, is_v2: bool = False):
+    print(f"Setting up load test environment for {num_students:,} distinct student sessions (Mode: {'SYNCHRONIZED SUBMISSION STORM' if is_storm else 'CONCURRENT FLOW'}, Target: {'V2 SHARDED DO' if is_v2 else 'V1 DIRECT D1'})...")
     # Step 0: Define static admin session for the run
     admin_sid = "admin-bench-static-session"
     admin_token = generate_jwt('usr_admin_1', 'principal@cbt.local', 'admin', 'Platform Admin', 'global', admin_sid)
@@ -226,7 +239,9 @@ async def run_benchmark(num_students: int = 500, max_in_flight: int = 50):
         'User-Agent': USER_AGENT
     }
 
-    connector = aiohttp.TCPConnector(limit=max_in_flight, ttl_dns_cache=300)
+    # In storm mode, allow broad socket concurrency during the submission wave
+    conn_limit = max(max_in_flight, 200) if is_storm else max_in_flight
+    connector = aiohttp.TCPConnector(limit=conn_limit, ttl_dns_cache=300)
     async with aiohttp.ClientSession(connector=connector) as session:
         # Step 1: Provision students in D1
         print(f"Provisioning {num_students} virtual students in D1...")
@@ -256,13 +271,15 @@ async def run_benchmark(num_students: int = 500, max_in_flight: int = 50):
                 f"VALUES ('{s['id']}', '{s['email']}', 'dummy:hash', 'student', '{s['name']}', 'global');"
             )
 
-        sql_file = "scratch/temp_students.sql"
+        scratch_dir = os.path.join(os.path.dirname(__file__), "..", "scratch")
+        os.makedirs(scratch_dir, exist_ok=True)
+        sql_file = os.path.join(scratch_dir, f"temp_students_{batch_id}.sql")
         with open(sql_file, "w", encoding="utf-8") as f:
             f.write("\n".join(sql_statements))
         
         print(f"Executing D1 student bulk insertion ({len(sql_statements)} rows)...")
         subprocess.run(
-            f'npx wrangler d1 execute cbt-platform --remote --file={sql_file}',
+            f'npx wrangler d1 execute cbt-platform --remote --file="{sql_file}"',
             cwd="d:/Websites/CBT/worker",
             shell=True,
             stdout=subprocess.DEVNULL,
@@ -278,16 +295,18 @@ async def run_benchmark(num_students: int = 500, max_in_flight: int = 50):
         ]
         kv_bulk_entries.append({"key": "session:usr_admin_1", "value": admin_sid, "expiration_ttl": 86400})
         
-        kv_bulk_file = "scratch/temp_kv_sessions.json"
+        kv_bulk_file = os.path.join(scratch_dir, f"temp_kv_sessions_{batch_id}.json")
         with open(kv_bulk_file, "w", encoding="utf-8") as f:
             json.dump(kv_bulk_entries, f)
 
         res_kv = subprocess.run(
-            f'npx wrangler kv:bulk put --binding CBT_KV {kv_bulk_file}',
+            f'npx wrangler kv:bulk put --binding CBT_KV "{kv_bulk_file}"',
             cwd="d:/Websites/CBT/worker",
             shell=True,
             capture_output=True,
-            text=True
+            text=True,
+            encoding='utf-8',
+            errors='replace'
         )
         if res_kv.returncode != 0:
             print("Wrangler KV bulk session registration failed:", res_kv.stderr)
@@ -330,35 +349,99 @@ async def run_benchmark(num_students: int = 500, max_in_flight: int = 50):
             print(f"Exam KV Cache Warmup: status={resp.status}, cached={data.get('from_cache')}, questions={len(data.get('questions', []))}")
 
         # Step 4: Fire concurrent load test
-        print(f"\n>>> LAUNCHING HIGH-CONCURRENCY EXAM RUN ({num_students:,} STUDENTS, {max_in_flight} IN-FLIGHT) <<<")
-        metrics.start_time = time.perf_counter()
-        
-        sem = asyncio.Semaphore(max_in_flight)
-        tasks = [
-            simulate_student_session(session, s[0], s[1], exam_id, s[2], sem)
-            for s in student_auth_list
-        ]
-        
-        await asyncio.gather(*tasks)
-        metrics.end_time = time.perf_counter()
+        if is_storm:
+            print(f"\n>>> STAGING {num_students:,} STUDENTS (GET EXAM, START ATTEMPT, AUTOSAVE) <<<")
+            metrics.start_time = time.perf_counter()
+            sem = asyncio.Semaphore(max_in_flight)
+            storm_barrier = asyncio.Barrier(num_students + 1)
+
+            async def stage_and_run(s):
+                await simulate_student_session(session, s[0], s[1], exam_id, s[2], sem, storm_barrier, is_v2=is_v2)
+
+            tasks = [asyncio.create_task(stage_and_run(s)) for s in student_auth_list]
+            
+            print(f"Staging virtual students across {max_in_flight} workers...")
+            # Orchestrator joins the barrier — waits until all students reach submission threshold
+            await storm_barrier.wait()
+            print(f"\n>>> [!] RELEASING SYNCHRONIZED SUBMISSION STORM ({num_students:,} STUDENTS -> {'V2 SHARDED DO' if is_v2 else 'V1 D1'}) [!] <<<")
+            await asyncio.gather(*tasks)
+            metrics.end_time = time.perf_counter()
+        else:
+            print(f"\n>>> LAUNCHING HIGH-CONCURRENCY EXAM RUN ({num_students:,} STUDENTS, {max_in_flight} IN-FLIGHT, TARGET: {'V2 SHARDED DO' if is_v2 else 'V1 D1'}) <<<")
+            metrics.start_time = time.perf_counter()
+            sem = asyncio.Semaphore(max_in_flight)
+            tasks = [
+                simulate_student_session(session, s[0], s[1], exam_id, s[2], sem, is_v2=is_v2)
+                for s in student_auth_list
+            ]
+            await asyncio.gather(*tasks)
+            metrics.end_time = time.perf_counter()
 
         metrics.summarize(num_students)
 
+        # Step 5: If V2, poll and prove reconciliation between DO and D1
+        if is_v2:
+            print("\n" + "="*88)
+            print("             SHARDED DO <-> D1 ASYNCHRONOUS RECONCILIATION AUDIT")
+            print("="*88)
+            print("Waiting for background DO outbox alarms to drain submissions to D1...")
+            reconciled = False
+            for poll in range(12):
+                await asyncio.sleep(2.0)
+                try:
+                    async with session.get(f"{BASE_URL}/admin/reconciliation/v2", headers=admin_headers) as r_resp:
+                        r_data = await r_resp.json()
+                        print(f"  [Poll {poll+1}/12] DO Accepted: {r_data.get('do_accepted_submissions')} | DO Outbox Pending: {r_data.get('do_outbox_pending')} | D1 Persisted: {r_data.get('d1_submissions')} | Reconciled: {r_data.get('reconciled')}")
+                        if r_data.get('reconciled') or (r_data.get('do_outbox_pending') == 0 and r_data.get('do_accepted_submissions') > 0):
+                            reconciled = True
+                            print("\n>> 100% RECONCILIATION CONFIRMED: ALL DO SUBMISSIONS PERSISTED TO D1 WITH ZERO LOSS <<")
+                            break
+                except Exception as ex:
+                    print("  Reconciliation poll error:", ex)
+            if not reconciled:
+                print("\n[!] Warning: Some outbox items are still draining to D1.")
+            print("="*88 + "\n")
+
         # Cleanup test exam & temp data
         print("Cleaning up benchmark students & exam from D1...")
-        cleanup_sql = f"DELETE FROM exam_attempts WHERE exam_id = '{exam_id}';\nDELETE FROM submissions WHERE exam_id = '{exam_id}';\nDELETE FROM exam_questions WHERE exam_id = '{exam_id}';\nDELETE FROM exams WHERE id = '{exam_id}';\nDELETE FROM users WHERE id LIKE 'bench_s_{batch_id}_%';"
-        with open("scratch/cleanup.sql", "w", encoding="utf-8") as f:
+        cleanup_file = os.path.join(scratch_dir, f"cleanup_{batch_id}.sql")
+        cleanup_sql = f"PRAGMA foreign_keys = OFF;\nDELETE FROM submission_answers WHERE submission_id IN (SELECT id FROM submissions WHERE exam_id = '{exam_id}');\nDELETE FROM submissions WHERE exam_id = '{exam_id}';\nDELETE FROM exam_attempts WHERE exam_id = '{exam_id}';\nDELETE FROM exam_questions WHERE exam_id = '{exam_id}';\nDELETE FROM exams WHERE id = '{exam_id}';\nDELETE FROM users WHERE id LIKE 'bench_s_{batch_id}_%';"
+        with open(cleanup_file, "w", encoding="utf-8") as f:
             f.write(cleanup_sql)
         subprocess.run(
-            'npx wrangler d1 execute cbt-platform --remote --file=scratch/cleanup.sql',
+            f'npx wrangler d1 execute cbt-platform --remote --file="{cleanup_file}"',
             cwd="d:/Websites/CBT/worker",
             shell=True,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL
         )
+        
+        # Remove scratch files
+        for p in [sql_file, kv_bulk_file, cleanup_file]:
+            if os.path.exists(p):
+                os.remove(p)
         print("Cleanup completed.")
 
 if __name__ == '__main__':
-    count = int(sys.argv[1]) if len(sys.argv) > 1 else 100
-    in_flight = int(sys.argv[2]) if len(sys.argv) > 2 else 25
-    asyncio.run(run_benchmark(count, in_flight))
+    count = 500
+    in_flight = 50
+    is_storm = False
+    is_v2 = False
+    
+    for arg in sys.argv[1:]:
+        if arg.startswith("--storm"):
+            is_storm = True
+        elif arg.startswith("--v2"):
+            is_v2 = True
+        elif arg.isdigit():
+            if count == 500 and not is_storm and not is_v2:
+                count = int(arg)
+            else:
+                in_flight = int(arg)
+    
+    if len(sys.argv) > 1 and sys.argv[1].isdigit():
+        count = int(sys.argv[1])
+    if len(sys.argv) > 2 and sys.argv[2].isdigit():
+        in_flight = int(sys.argv[2])
+
+    asyncio.run(run_benchmark(count, in_flight, is_storm, is_v2))

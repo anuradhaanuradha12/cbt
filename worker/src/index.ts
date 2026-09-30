@@ -53,6 +53,19 @@ export default {
       response ??= await imagesRouter(request, env, pathname);
       response ??= await forgeRouter(request, env, pathname);
 
+      if (pathname === '/admin/maintenance/purge-bench' && request.method === 'POST') {
+        let totalPurged = 0;
+        for (let iter = 0; iter < 100; iter++) {
+          const { results } = await env.DB.prepare("SELECT id FROM users WHERE id >= 'bench_s_' AND id < 'bench_t' LIMIT 100").all<{ id: string }>();
+          if (!results || results.length === 0) break;
+          const stmts = results.map(r => env.DB.prepare("DELETE FROM users WHERE id = ?").bind(r.id));
+          await env.DB.batch(stmts);
+          totalPurged += results.length;
+          if (results.length < 100) break;
+        }
+        return json({ purged: totalPurged });
+      }
+
       if (response) return response;
 
       if (env.ASSETS && request.method === 'GET') {

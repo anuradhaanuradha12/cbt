@@ -50,3 +50,9 @@ crons = ["0 0 * * SUN"] # Run every Sunday at midnight
 directory = "../frontend"
 binding = "ASSETS"
 
+[[migrations]]
+tag = "v2-drop-durable-objects"
+deleted_classes = ["SubmissionShard"]
+
+
+

@@ -25,10 +25,18 @@ export async function startAttempt(request: Request, env: Env): Promise<Response
 
   const { exam_id } = body;
 
-  // Verify exam exists and is published/ongoing
-  const exam = await env.DB.prepare(
-    'SELECT id, status, starts_at, ends_at FROM exams WHERE id = ? AND college_id = ?'
-  ).bind(exam_id, ctx.user.college_id).first<{ id: string; status: string; starts_at: number; ends_at: number }>();
+  // ── Parallel Exam + Attempt Verification (Batch 1) ───────────
+  const [examRes, existingRes] = await env.DB.batch([
+    env.DB.prepare(
+      'SELECT id, status, starts_at, ends_at FROM exams WHERE id = ? AND college_id = ?'
+    ).bind(exam_id, ctx.user.college_id),
+    env.DB.prepare(
+      'SELECT id, status FROM exam_attempts WHERE exam_id = ? AND student_id = ?'
+    ).bind(exam_id, ctx.user.sub)
+  ]);
+
+  const exam = (examRes.results?.[0] ?? null) as { id: string; status: string; starts_at: number; ends_at: number } | null;
+  const existing = (existingRes.results?.[0] ?? null) as { id: string; status: string } | null;
 
   if (!exam) return json404('Exam not found');
   if (exam.status !== 'published' && exam.status !== 'ongoing') {
@@ -42,11 +50,6 @@ export async function startAttempt(request: Request, env: Env): Promise<Response
   if (exam.ends_at && now > exam.ends_at) {
     return json403('Exam has ended');
   }
-
-  // Check if attempt already exists
-  const existing = await env.DB.prepare(
-    'SELECT id, status FROM exam_attempts WHERE exam_id = ? AND student_id = ?'
-  ).bind(exam_id, ctx.user.sub).first<{ id: string; status: string }>();
 
   if (existing) {
     if (existing.status === 'submitted') {

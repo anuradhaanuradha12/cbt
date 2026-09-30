@@ -8,7 +8,7 @@ import { json, json400, json403, json404, json409 } from '../middleware/response
 import { requireAuth } from '../middleware/auth';
 import { KV_DRAFT_EXTRA_TTL, SUBMIT_GRACE_SECONDS } from '../config';
 import type { Env } from '../types';
-import type { SubmitRequest, ExamConfig } from '../../../shared/types';
+import type { SubmitRequest, ExamConfig, ExamPayload } from '../../../shared/types';
 
 function generateId(): string {
   return crypto.randomUUID();
@@ -32,20 +32,22 @@ export async function submitExam(
   const { exam_id, attempt_id, answers = {}, marked_for_review = [], answer_timestamps = {}, time_taken_seconds = 0 } = body;
   if (!exam_id || !attempt_id) return json400('exam_id and attempt_id are required');
 
-  // ── Verify attempt belongs to this student ─────────────────
-  const attempt = await env.DB.prepare(
-    'SELECT id, student_id, status FROM exam_attempts WHERE id = ? AND exam_id = ?'
-  ).bind(attempt_id, exam_id).first<{ id: string; student_id: string; status: string }>();
+  // ── Parallel Verification & Timer Check (Batch 1: 2 queries in 1 network roundtrip) ──
+  const [attemptRes, examRes] = await env.DB.batch([
+    env.DB.prepare(
+      'SELECT id, student_id, status FROM exam_attempts WHERE id = ? AND exam_id = ?'
+    ).bind(attempt_id, exam_id),
+    env.DB.prepare(
+      'SELECT ends_at, config_snapshot FROM exams WHERE id = ? AND college_id = ?'
+    ).bind(exam_id, authCtx.user.college_id)
+  ]);
+
+  const attempt = (attemptRes.results?.[0] ?? null) as { id: string; student_id: string; status: string } | null;
+  const exam = (examRes.results?.[0] ?? null) as { ends_at: number; config_snapshot: string } | null;
 
   if (!attempt) return json404('Attempt not found');
   if (attempt.student_id !== authCtx.user.sub) return json403('Not your attempt');
   if (attempt.status === 'submitted') return json409('Already submitted');
-
-  // ── Server-side timer check ────────────────────────────────
-  const exam = await env.DB.prepare(
-    'SELECT ends_at, config_snapshot FROM exams WHERE id = ? AND college_id = ?'
-  ).bind(exam_id, authCtx.user.college_id).first<{ ends_at: number; config_snapshot: string }>();
-
   if (!exam) return json404('Exam not found');
 
   const now = Math.floor(Date.now() / 1000);
@@ -56,30 +58,32 @@ export async function submitExam(
     return json403(`Exam time ended ${now - exam.ends_at}s ago. Submission rejected.`);
   }
 
-  // ── Mark attempt as submitted ──────────────────────────────
-  await env.DB.prepare('UPDATE exam_attempts SET status = ?, last_seen_at = ? WHERE id = ?')
-    .bind('submitted', now, attempt_id).run();
-
-  // ── Create submission row (score computed async) ───────────
+  // ── Insert submission & answers in 1 atomic write batch ──────
   const submissionId = generateId();
-  await env.DB.prepare(`
-    INSERT INTO submissions (id, attempt_id, exam_id, student_id, time_taken_seconds, college_id)
-    VALUES (?, ?, ?, ?, ?, ?)
-  `).bind(submissionId, attempt_id, exam_id, authCtx.user.sub, time_taken_seconds, authCtx.user.college_id).run();
 
-  // ── Insert submission_answers rows ─────────────────────────
   // Fetch question list for this exam to ensure we record all questions (even unattempted)
   const examQs = await env.DB.prepare(
     'SELECT question_id FROM exam_questions WHERE exam_id = ?'
   ).bind(exam_id).all<{ question_id: string }>();
+
+  const updateAttemptStmt = env.DB.prepare(
+    'UPDATE exam_attempts SET status = ?, last_seen_at = ? WHERE id = ?'
+  ).bind('submitted', now, attempt_id);
+
+  const insertSubmissionStmt = env.DB.prepare(`
+    INSERT INTO submissions (id, attempt_id, exam_id, student_id, time_taken_seconds, college_id)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `).bind(submissionId, attempt_id, exam_id, authCtx.user.sub, time_taken_seconds, authCtx.user.college_id);
 
   const answerStmt = env.DB.prepare(`
     INSERT INTO submission_answers (submission_id, question_id, selected_answer, marked_for_review, answered_at)
     VALUES (?, ?, ?, ?, ?)
   `);
 
-  await env.DB.batch(
-    examQs.results.map(q =>
+  const writeBatch = [
+    updateAttemptStmt,
+    insertSubmissionStmt,
+    ...examQs.results.map(q =>
       answerStmt.bind(
         submissionId,
         q.question_id,
@@ -88,7 +92,9 @@ export async function submitExam(
         answer_timestamps[q.question_id] ?? null
       )
     )
-  );
+  ];
+
+  await env.DB.batch(writeBatch);
 
   // ── Clean up KV draft ──────────────────────────────────────
   await env.CBT_KV.delete(`draft:${exam_id}:${authCtx.user.sub}`);
@@ -201,8 +207,8 @@ async function scoreSubmission(
 }
 
 // ── POST /submissions/draft ───────────────────────────────────
-// KV-only save. No D1 write. Called every 15s from auto-save hook.
-// Expires automatically when exam ends + 30min grace period.
+// 100% Pure KV edge save. Zero D1 reads or writes. Called from auto-save hook.
+// Reads exam end time from KV cache to calculate TTL, ensuring zero DB contention.
 
 export async function saveDraft(request: Request, env: Env): Promise<Response> {
   const { ctx, error } = await requireAuth(request, env, ['student']);
@@ -213,15 +219,14 @@ export async function saveDraft(request: Request, env: Env): Promise<Response> {
   if (!body.exam_id) return json400('exam_id is required');
 
   const { exam_id, answers = {} } = body;
-
-  // Get exam end time for KV TTL calculation
-  const exam = await env.DB.prepare('SELECT ends_at FROM exams WHERE id = ? AND college_id = ?')
-    .bind(exam_id, ctx.user.college_id).first<{ ends_at: number | null }>();
-
   const now = Math.floor(Date.now() / 1000);
-  const ttl = exam?.ends_at
-    ? Math.max(60, (exam.ends_at - now) + KV_DRAFT_EXTRA_TTL)
-    : KV_DRAFT_EXTRA_TTL;
+
+  // Attempt to read ends_at from cached exam payload in KV (0 D1 load)
+  let ttl = KV_DRAFT_EXTRA_TTL;
+  const cachedExam = await env.CBT_KV.get<ExamPayload>(`exam:${exam_id}`, 'json');
+  if (cachedExam?.exam?.ends_at) {
+    ttl = Math.max(60, (cachedExam.exam.ends_at - now) + KV_DRAFT_EXTRA_TTL);
+  }
 
   await env.CBT_KV.put(
     `draft:${exam_id}:${ctx.user.sub}`,
