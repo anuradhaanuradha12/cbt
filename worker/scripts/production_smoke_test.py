@@ -11,7 +11,7 @@ Verifies end-to-end operational health of the production deployment:
    - Exactly 10 authentic demo/staff users
    - 0 synthetic bench users
    - 0 exams / attempts / submissions / answers
-   - 0 questions with benchmark telemetry
+   - 0 questions with empirical attempt telemetry (observed_attempt_count reset; AI/rubric classification intact)
 6. KV DLQ counters
 7. Static asset delivery (GET /)
 """
@@ -112,7 +112,7 @@ def main():
     print("\n[5/6] Auditing Remote D1 Production State...")
     sql1 = "SELECT 'questions' as tbl, count(*) as cnt FROM questions UNION ALL SELECT 'staff_users', count(*) FROM users WHERE id NOT LIKE 'bench_%' UNION ALL SELECT 'bench_users', count(*) FROM users WHERE id LIKE 'bench_%';"
     sql2 = "SELECT 'exams' as tbl, count(*) as cnt FROM exams UNION ALL SELECT 'attempts', count(*) FROM exam_attempts UNION ALL SELECT 'submissions', count(*) FROM submissions UNION ALL SELECT 'answers', count(*) FROM submission_answers;"
-    sql3 = "SELECT 'questions_with_telemetry' as tbl, count(*) as cnt FROM questions WHERE observed_attempt_count > 0;"
+    sql3 = "SELECT 'questions_with_empirical_telemetry' as tbl, count(*) as cnt FROM questions WHERE observed_attempt_count > 0;"
 
     rows = []
     for s in [sql1, sql2, sql3]:
@@ -121,7 +121,7 @@ def main():
 
     ledger = {r["tbl"]: r["cnt"] for r in rows}
     for tbl, cnt in ledger.items():
-        print(f"      • {tbl:<26}: {cnt:,}")
+        print(f"      * {tbl:<36}: {cnt:,}")
 
     assert ledger["questions"] == 86737, f"Question count mismatch: {ledger['questions']}"
     assert ledger["staff_users"] == 10, f"Staff users count mismatch: {ledger['staff_users']}"
@@ -130,7 +130,7 @@ def main():
     assert ledger["attempts"] == 0, f"Attempts remain: {ledger['attempts']}"
     assert ledger["submissions"] == 0, f"Submissions remain: {ledger['submissions']}"
     assert ledger["answers"] == 0, f"Answers remain: {ledger['answers']}"
-    assert ledger["questions_with_telemetry"] == 0, f"Questions with telemetry remain: {ledger['questions_with_telemetry']}"
+    assert ledger["questions_with_empirical_telemetry"] == 0, f"Questions with telemetry remain: {ledger['questions_with_empirical_telemetry']}"
 
     # 6. Static Asset Delivery
     print("\n[6/6] Testing Static Assets PWA Delivery (GET /)...")
