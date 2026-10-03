@@ -276,7 +276,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         <div class="solution-block hidden mt-4 p-3 bg-indigo-600/10 border border-emerald-500/20 rounded-lg text-sm">
                             <div class="font-bold text-indigo-600 mb-1">Correct Answer: ${q.correct_answer.toUpperCase()}</div>
                             ${q.explanation ? `<div class="text-emerald-100/80 mt-2 whitespace-pre-wrap">${q.explanation}</div>` : ''}
-                            ${q.explanation_image_r2_key ? `<img src="/images/${q.explanation_image_r2_key}" class="mt-3 max-h-48 rounded border border-indigo-600/30" alt="Solution Image">` : ''}
+                            ${q.explanation_image_r2_key ? `<img src="${api.imageUrl(q.explanation_image_r2_key)}" class="mt-3 max-h-48 rounded border border-indigo-600/30" alt="Solution Image">` : ''}
                         </div>
                     `;
                 }
@@ -293,7 +293,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     </button>
 
                     <div class="text-sm text-gray-900 mt-2 font-medium leading-relaxed">${q.question_text}</div>
-                    ${q.image_r2_key ? `<img src="/images/${q.image_r2_key}" class="mt-3 max-h-48 rounded border border-gray-300" alt="Question Image">` : ''}
+                    ${q.image_r2_key ? `<img src="${api.imageUrl(q.image_r2_key)}" class="mt-3 max-h-48 rounded border border-gray-300" alt="Question Image">` : ''}
                     
                     ${optionsHtml}
                     

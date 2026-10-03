@@ -65,8 +65,9 @@ export async function listExams(request: Request, env: Env): Promise<Response> {
     }
   }
 
+  // Base query already contains `WHERE college_id = ?` — additional filters must use AND.
   if (filters.length > 0) {
-    query += ' WHERE ' + filters.join(' AND ');
+    query += ' AND ' + filters.join(' AND ');
   }
   query += ' ORDER BY created_at DESC';
 

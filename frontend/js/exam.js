@@ -17,8 +17,20 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // State Variables
     let examData = null;
+    let examQuestions = [];
     let attemptData = null;
     let questions = [];
+    let startedAtSeconds = 0;
+
+    // GET /exams/:id returns a parsed `config` object; older rows may only carry
+    // the raw JSON string in `config_snapshot`, so fall back to parsing it.
+    const examConfig = () => {
+        if (examData?.config && typeof examData.config === 'object') return examData.config;
+        if (typeof examData?.config_snapshot === 'string') {
+            try { return JSON.parse(examData.config_snapshot); } catch { /* ignore */ }
+        }
+        return {};
+    };
     let currentIndex = 0;
     
     // Status maps for the grid (status can be: not-visited, not-answered, answered, review, answered-review)
@@ -55,6 +67,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             // 1. Fetch Exam Details (to get config)
             const examRes = await api.request(`/exams/${examId}`);
             examData = examRes.exam;
+            examQuestions = examRes.questions || [];
             
             if (examRes.is_early_access) {
                 showInstructionScreen(examRes.server_time);
@@ -74,11 +87,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         const instScreen = document.getElementById('instructionScreen');
         instScreen.style.display = 'flex';
         
+        const cfg = examConfig();
         document.getElementById('instExamTitle').textContent = examData.title;
-        document.getElementById('instDuration').textContent = `${examData.config_snapshot?.duration_minutes || 180} mins`;
-        document.getElementById('instMarks').textContent = examData.config_snapshot?.total_marks || '--';
-        document.getElementById('instMarksCorrect').textContent = `+${examData.config_snapshot?.marks_correct || 4} marks`;
-        document.getElementById('instMarksWrong').textContent = `-${examData.config_snapshot?.marks_wrong || 1} mark`;
+        document.getElementById('instDuration').textContent = `${cfg.duration_minutes || examData.duration_minutes || 180} mins`;
+        document.getElementById('instMarks').textContent = examData.total_marks || '--';
+        document.getElementById('instMarksCorrect').textContent = `+${cfg.marks_correct ?? 4} marks`;
+        document.getElementById('instMarksWrong').textContent = `-${cfg.marks_wrong ?? 1} mark`;
         
         const btnBegin = document.getElementById('btnBeginExam');
         const countdownEl = document.getElementById('instCountdown');
@@ -108,6 +122,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             return;
                         }
                         examData = newRes.exam;
+                        examQuestions = newRes.questions || [];
                         
                         instScreen.style.display = 'none';
                         document.getElementById('mainExamLayout').style.display = 'grid';
@@ -132,10 +147,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
             examTitle.textContent = examData.title;
             
-            // 2. Start an attempt (requires questions to be available)
-            const attemptRes = await api.request(`/exams/${examId}/attempts`, 'POST');
-            attemptData = attemptRes.attempt;
-            questions = attemptRes.questions;
+            // 2. Start (or resume) the attempt. Questions come from the exam fetch above.
+            const attemptRes = await api.request('/attempts', 'POST', { exam_id: examId });
+            attemptData = { id: attemptRes.attempt_id };
+            questions = examQuestions;
             
             if (!questions || questions.length === 0) {
                 throw new Error("No questions available for this exam yet.");
@@ -176,7 +191,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             responses = new Array(questions.length).fill(null);
             
             // Set Timer
-            timeRemainingSeconds = examData.config_snapshot?.duration_minutes * 60 || 180 * 60;
+            const durationMinutes = examConfig().duration_minutes || examData.duration_minutes || 180;
+            startedAtSeconds = Math.floor(Date.now() / 1000);
+            timeRemainingSeconds = durationMinutes * 60;
             startTimer();
             
             // Set up Anti-Cheat Tracking
@@ -253,7 +270,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         questionText.innerHTML = q.question_text || 'No question text available.';
         
         if (q.image_r2_key) {
-            questionText.innerHTML += `<br><img src="/images/${q.image_r2_key}" class="mt-3 max-h-64 rounded border border-gray-300" alt="Question Image">`;
+            questionText.innerHTML += `<br><img src="${api.imageUrl(q.image_r2_key)}" class="mt-3 max-h-64 rounded border border-gray-300" alt="Question Image">`;
         }
         
         // Render Options
@@ -469,18 +486,34 @@ document.addEventListener('DOMContentLoaded', async () => {
         btnSubmit.textContent = 'Submitting...';
         
         try {
-            // Format responses for backend
-            const submissions = [];
+            // Backend expects answers as a { question_id: selected_answer } map, plus the
+            // review/timestamp side-channels it records per question.
+            const answers = {};
+            const markedForReview = [];
+            const answerTimestamps = {};
             questions.forEach((q, index) => {
-                if (responses[index] !== null && responses[index] !== '') {
-                    submissions.push({
-                        question_id: q.id,
-                        response: String(responses[index])
-                    });
+                const response = responses[index];
+                if (response !== null && response !== undefined && response !== '') {
+                    answers[q.id] = String(response);
+                    answerTimestamps[q.id] = Math.floor(Date.now() / 1000);
+                }
+                if (questionStatuses[index] === 'review' || questionStatuses[index] === 'answered-review') {
+                    markedForReview.push(q.id);
                 }
             });
             
-            await api.request(`/submissions/${attemptData.id}`, 'POST', { responses: submissions });
+            const timeTaken = startedAtSeconds
+                ? Math.max(0, Math.floor(Date.now() / 1000) - startedAtSeconds)
+                : 0;
+            
+            await api.request('/submissions', 'POST', {
+                exam_id: examId,
+                attempt_id: attemptData.id,
+                answers: answers,
+                marked_for_review: markedForReview,
+                answer_timestamps: answerTimestamps,
+                time_taken_seconds: timeTaken
+            });
             alert("Exam submitted successfully!");
             window.location.href = `/results?id=${examId}`;
             

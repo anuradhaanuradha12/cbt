@@ -35,3 +35,8 @@ worker/migrate-images.ts
 worker/restore-text.mjs
 
 INTERNAL_README.md
+enhanced-images/
+
+# Nested project copy + generated test artifacts
+cbt-main/
+worker/test-results/

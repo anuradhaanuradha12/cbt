@@ -15,6 +15,7 @@
     };
   </script>
   <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" async></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -724,6 +725,79 @@
       .workspace { grid-template-columns: 1fr 1fr; }
       .panel:first-child { display: none; }
     }
+
+    /* ── PDF / Print document ───────────────────────────────────────── */
+    #print-root {
+      position: fixed;
+      left: -10000px;
+      top: 0;
+      width: 794px; /* A4 width at 96dpi */
+      background: #ffffff;
+      color: #111827;
+      z-index: -1;
+    }
+    .pd-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      border-bottom: 3px solid #5846f6;
+      padding-bottom: 10px;
+      margin-bottom: 18px;
+    }
+    .pd-brand { font-size: 20px; font-weight: 800; color: #111827; }
+    .pd-logo  { color: #5846f6; }
+    .pd-meta  { font-size: 12px; color: #4b5563; text-align: right; }
+    .pd-question-label, .pd-options-label, .pd-expl-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      color: #5846f6;
+      margin: 16px 0 6px;
+    }
+    .pd-question { font-size: 15px; line-height: 1.65; color: #111827; white-space: pre-wrap; }
+    .pd-options { margin: 0 0 4px 22px; padding: 0; list-style-type: upper-alpha; }
+    .pd-options li { font-size: 14px; line-height: 1.7; color: #1f2937; }
+    .pd-correct { font-weight: 700; color: #047857; }
+    .pd-correct::after { content: '  ✓'; }
+    .pd-answer {
+      margin-top: 14px;
+      font-size: 13px;
+      color: #065f46;
+      background: #ecfdf5;
+      border: 1px solid #a7f3d0;
+      border-radius: 6px;
+      padding: 8px 12px;
+      display: inline-block;
+    }
+    .pd-img-slot { margin-top: 10px; }
+    .pd-img {
+      max-width: 60%;
+      max-height: 300px;
+      display: block;
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+    }
+    .pd-img-caption { font-size: 10px; color: #6b7280; margin-top: 3px; }
+    .pd-footer {
+      margin-top: 26px;
+      border-top: 1px solid #e5e7eb;
+      padding-top: 8px;
+      font-size: 10.5px;
+      color: #6b7280;
+    }
+
+    @media print {
+      @page { size: A4 portrait; margin: 12mm; }
+      body.print-mode > *:not(#print-root) { display: none !important; }
+      body.print-mode { background: #fff; }
+      body.print-mode #print-root {
+        position: static !important;
+        left: 0 !important;
+        width: auto !important;
+        z-index: auto !important;
+      }
+    }
   </style>
 
     <link rel="manifest" href="manifest.json">
@@ -1009,6 +1083,10 @@
           <button type="button" class="btn btn-primary" style="flex:1" id="btn-save-draft" onclick="saveDraft()">💾 Save Draft</button>
           <button type="button" class="btn btn-ai" style="flex:1" id="btn-ai-review" onclick="triggerAiReview()" style="display:none">🤖 AI Review</button>
         </div>
+        <div class="editor-footer-row">
+          <button type="button" class="btn btn-secondary" style="flex:1" id="btn-download-pdf" onclick="downloadQuestionPdf()">📄 Download PDF</button>
+          <button type="button" class="btn btn-secondary" style="flex:1" id="btn-print" onclick="printQuestion()">🖨️ Print</button>
+        </div>
         <button type="button" class="btn btn-success" id="btn-approve" onclick="approveDraft()" style="display:none">✅ Approve Question</button>
         <button type="button" class="btn btn-danger"  id="btn-reject"  onclick="rejectDraft()"  style="display:none">✗ Reject</button>
       </div>
@@ -1016,6 +1094,7 @@
   </div>
 </div>
 
+<div id="print-root"></div>
 <div id="toast-container"></div>
 
 <script>
@@ -1076,11 +1155,19 @@ function logout() {
 async function apiFetch(path, opts = {}, withAuth = true) {
   const headers = { 'Content-Type': 'application/json' };
   if (withAuth && token) headers['Authorization'] = `Bearer ${token}`;
-  return fetch(API + path, {
+  const res = await fetch(API + path, {
     method: opts.method || 'GET',
     headers,
     body: opts.body ? JSON.stringify(opts.body) : undefined,
   });
+  // An expired or revoked token must not leave the user stuck on a dead screen.
+  // Drop the dead session and return them to the login overlay. (login itself is
+  // called with withAuth=false so a wrong password doesn't trigger this.)
+  if (withAuth && res.status === 401) {
+    logout();
+    toast('Your session expired. Please sign in again.', 'error');
+  }
+  return res;
 }
 
 // ── Init ───────────────────────────────────────────────────────────────────
@@ -1638,6 +1725,111 @@ function resetEditor() {
   document.getElementById('editor-form').style.display = 'none';
   document.getElementById('editor-placeholder').style.display = 'flex';
   document.querySelectorAll('.draft-card').forEach(c => c.classList.remove('selected'));
+}
+
+// ── PDF / Print ───────────────────────────────────────────────────────────
+function buildPrintDocument() {
+  const q   = document.getElementById('ed-question').value.trim();
+  const a   = document.getElementById('ed-opt-a').value.trim();
+  const b   = document.getElementById('ed-opt-b').value.trim();
+  const c   = document.getElementById('ed-opt-c').value.trim();
+  const d   = document.getElementById('ed-opt-d').value.trim();
+  const exp = document.getElementById('ed-explanation').value.trim();
+  const subject   = document.getElementById('ed-subject').value;
+  const chapter   = document.getElementById('ed-chapter').value.trim();
+  const standard  = document.getElementById('ed-standard').value;
+
+  if (!q) { toast('Nothing to export — the question text is empty.', 'error'); return null; }
+
+  const optHtml = [a, b, c, d]
+    .map((t, i) => `<li class="${'ABCD'[i] === correctAnswer ? 'pd-correct' : ''}">${escapeHtml(t) || '—'}</li>`)
+    .join('');
+
+  const imgHtml = ['question', 'option', 'explanation']
+    .filter(type => imageKeys[type])
+    .map(type => `
+      <div class="pd-img-slot">
+        <img class="pd-img" src="${document.getElementById(`preview-${type}-img`)?.src || ''}" />
+        <div class="pd-img-caption">${type.charAt(0).toUpperCase() + type.slice(1)} image</div>
+      </div>`)
+    .join('');
+
+  return `
+    <div class="pd-header">
+      <div class="pd-brand"><span class="pd-logo">⚡</span> QForge</div>
+      <div class="pd-meta">
+        ${escapeHtml(subject || '')}${chapter ? ' — ' + escapeHtml(chapter) : ''}<br>
+        ${escapeHtml(standard || '')} · ${escapeHtml(difficulty || '')} · ${new Date().toLocaleDateString()}
+      </div>
+    </div>
+    <div class="pd-question-label">Question</div>
+    <div class="pd-question">${escapeHtml(q)}</div>
+    ${imgHtml}
+    ${optHtml ? `<div class="pd-options-label">Options</div><ol class="pd-options">${optHtml}</ol>` : ''}
+    <div class="pd-answer">Correct Answer: ${escapeHtml(correctAnswer)}</div>
+    ${exp ? `<div class="pd-expl-label">Explanation</div><div class="pd-question">${escapeHtml(exp)}</div>` : ''}
+    <div class="pd-footer">Generated by QForge · ${new Date().toLocaleString()}</div>`;
+}
+
+function escapeHtml(s) {
+  return String(s ?? '')
+    .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;').replaceAll("'", '&#39;');
+}
+
+function pdfFileName() {
+  const subject = document.getElementById('ed-subject').value || 'question';
+  const chapter = document.getElementById('ed-chapter').value.trim() || 'untitled';
+  return `qforge-${subject}-${chapter.toLowerCase().replace(/[^a-z0-9]+/g, '-')}.pdf`;
+}
+
+async function downloadQuestionPdf() {
+  const html = buildPrintDocument();
+  if (!html) return;
+  if (typeof html2pdf === 'undefined') { toast('PDF library failed to load. Check your connection.', 'error'); return; }
+
+  const btn = document.getElementById('btn-download-pdf');
+  btn.disabled = true; btn.textContent = '⏳ Creating PDF…';
+
+  const root = document.getElementById('print-root');
+  root.innerHTML = html;
+  if (typeof MathJax !== 'undefined') { try { await MathJax.typesetPromise?.([root]); } catch {} }
+
+  try {
+    await html2pdf().set({
+      margin: [10, 10, 12, 10],
+      filename: pdfFileName(),
+      // PNG + higher scale keeps fine text and diagrams crisp (JPEG 0.95 at scale 2 softened them)
+      image: { type: 'png' },
+      html2canvas: { scale: 3, useCORS: true, backgroundColor: '#ffffff' },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+      pagebreak: { mode: ['css', 'legacy'] },
+    }).from(root).save();
+    toast('PDF downloaded!', 'success');
+  } catch (e) {
+    console.error(e);
+    toast('Failed to create PDF.', 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = '📄 Download PDF';
+  }
+}
+
+function printQuestion() {
+  const html = buildPrintDocument();
+  if (!html) return;
+
+  const root = document.getElementById('print-root');
+  root.innerHTML = html;
+  const done = () => {
+    document.body.classList.add('print-mode');
+    window.print();
+    setTimeout(() => document.body.classList.remove('print-mode'), 500);
+  };
+  if (typeof MathJax !== 'undefined' && MathJax.typesetPromise) {
+    MathJax.typesetPromise([root]).then(done).catch(done);
+  } else {
+    done();
+  }
 }
 
 // ── Toast ──────────────────────────────────────────────────────────────────

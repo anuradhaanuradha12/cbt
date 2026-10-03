@@ -220,7 +220,7 @@ export async function getMyResult(request: Request, env: Env, examId: string): P
   if (!submission) return json404('No submission found for this exam');
 
   const answers = await env.DB.prepare(
-    'SELECT sa.*, q.question_text, q.option_a, q.option_b, q.option_c, q.option_d, q.correct_answer, q.explanation FROM submission_answers sa JOIN questions q ON q.id = sa.question_id WHERE sa.submission_id = ?'
+    'SELECT sa.*, q.question_text, q.option_a, q.option_b, q.option_c, q.option_d, q.correct_answer, q.explanation, q.image_r2_key, q.explanation_image_r2_key FROM submission_answers sa JOIN questions q ON q.id = sa.question_id WHERE sa.submission_id = ?'
   ).bind(submission['id']).all();
 
   return json({ submission, answers: answers.results });
