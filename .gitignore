@@ -40,3 +40,7 @@ enhanced-images/
 # Nested project copy + generated test artifacts
 cbt-main/
 worker/test-results/
+
+# Local-only tooling: strips the source site watermark from scraped images.
+# Kept out of the repo deliberately.
+worker/watermark.mjs
