@@ -28,6 +28,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     let attemptStartedAt = null; // epoch seconds captured when attempt starts
     let questions = [];
     let fetchedQuestions = [];
+
+    // GET /exams/:id returns a parsed `config` object; older rows may only carry
+    // the raw JSON string in `config_snapshot`, so fall back to parsing it.
+    const examConfig = () => {
+        if (examData?.config && typeof examData.config === 'object' && !Array.isArray(examData.config)) return examData.config;
+        if (typeof examData?.config_snapshot === 'string' && examData.config_snapshot) {
+            try { return JSON.parse(examData.config_snapshot); } catch { /* ignore */ }
+        }
+        return {};
+    };
     let currentIndex = 0;
 
     // Status maps for the grid (status can be: not-visited, not-answered, answered, review, answered-review)
@@ -249,7 +259,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             examData = examRes.exam;
             examData._fetchedServerTime = examRes.server_time; // server clock, for skew-safe timing
             fetchedQuestions = examRes.questions || [];
-
             if (examRes.is_early_access) {
                 showInstructionScreen(examRes.server_time);
             } else {
@@ -268,13 +277,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         const instScreen = document.getElementById('instructionScreen');
         instScreen.style.display = 'flex';
         
+        const cfg = examConfig();
         document.getElementById('instExamTitle').textContent = examData.title;
         // config_snapshot arrives as a JSON string; prefer the API's parsed
         // `config` object and fall back to parsing the raw snapshot.
-        let cfg = examData.config || {};
-        if ((!cfg || Object.keys(cfg).length === 0) && typeof examData.config_snapshot === 'string' && examData.config_snapshot) {
-            try { cfg = JSON.parse(examData.config_snapshot); } catch { cfg = {}; }
-        }
         const totalMarks = examData.total_marks ?? cfg.total_marks;
         document.getElementById('instDuration').textContent = `${cfg.duration_minutes || examData.duration_minutes || 180} mins`;
         document.getElementById('instMarks').textContent = (totalMarks !== undefined && totalMarks !== null) ? totalMarks : '--';
@@ -310,7 +316,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                         }
                         examData = newRes.exam;
                         fetchedQuestions = newRes.questions || [];
-
                         instScreen.style.display = 'none';
                         document.getElementById('mainExamLayout').style.display = 'grid';
 
@@ -334,12 +339,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
             examTitle.textContent = examData.title;
             
-            // 2. Start an attempt (requires questions to be available)
+// 2. Start (or resume) the attempt. Questions come from the exam fetch above.
             attemptStartedAt = Math.floor(Date.now() / 1000);
             const attemptRes = await api.request('/attempts', 'POST', { exam_id: examId });
             attemptData = { id: attemptRes.attempt_id, resumed: attemptRes.resumed };
             questions = fetchedQuestions;
-
             if (!questions || questions.length === 0) {
                 throw new Error("No questions available for this exam yet.");
             }
@@ -378,21 +382,18 @@ document.addEventListener('DOMContentLoaded', async () => {
             questionStatuses[0] = 'not-answered';
             responses = new Array(questions.length).fill(null);
             
-            // Restore anything snapshotted before a refresh/crash mid-outage —
+// Restore anything snapshotted before a refresh/crash mid-outage —
             // must run after the arrays are sized to the question list.
             const restored = restoreDraftSnapshot();
             if (restored) {
                 notify.info('Restored your saved answers from this device.', 'Welcome back');
             }
-            
+
             // Set Timer — production rule: a student always gets the full
             // duration, but never past the exam's ends_at. A student who starts
             // late gets only the time left in the window (server enforces the
             // same cut-off at submit, so no one can keep answering after it).
-            let cfgDur = examData.config && !Array.isArray(examData.config) ? examData.config : {};
-            if ((!cfgDur || Object.keys(cfgDur).length === 0) && typeof examData.config_snapshot === 'string' && examData.config_snapshot) {
-                try { cfgDur = JSON.parse(examData.config_snapshot); } catch { cfgDur = {}; }
-            }
+            const cfgDur = examConfig();
             const durationSec = (cfgDur.duration_minutes || examData.duration_minutes || 180) * 60;
             const serverSkew = (typeof examData._fetchedServerTime === 'number' && attemptStartedAt)
                 ? attemptStartedAt - examData._fetchedServerTime : 0;
@@ -409,6 +410,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 draftTimeRemaining = null;
             }
             totalDurationSeconds = timeRemainingSeconds;
+            startedAtSeconds = attemptStartedAt;
             startTimer();
             startConnectionMonitor();
             
@@ -507,7 +509,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         questionText.innerHTML = api.renderRichText(q.question_text) || 'No question text available.';
         
         if (q.image_r2_key) {
-            questionText.innerHTML += `<br><img src="/images/${q.image_r2_key}?v=${q.updated_at ?? Date.now()}" class="mt-3 max-h-64 rounded border border-gray-300" alt="Question Image" onerror="this.replaceWith(Object.assign(document.createElement('span'),{textContent:'[diagram unavailable — refresh the page]',className:'text-xs text-gray-400'}))">`;
+            questionText.innerHTML += `<br><img src="${api.imageUrl(q.image_r2_key)}?v=${q.updated_at ?? Date.now()}" class="mt-3 max-h-64 rounded border border-gray-300" alt="Question Image" onerror="this.replaceWith(Object.assign(document.createElement('span'),{textContent:'[diagram unavailable — refresh the page]',className:'text-xs text-gray-400'}))">`;
         }
         
         // Render Options
@@ -778,27 +780,33 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!silent) btnSubmit.textContent = 'Submitting...';
         
         try {
-            // Format responses for backend
+// Backend expects answers as a { question_id: selected_answer } map, plus the
+            // review/timestamp side-channels it records per question.
             const answers = {};
             const marked_for_review = [];
+            const answer_timestamps = {};
             questions.forEach((q, index) => {
-                if (responses[index] !== null && responses[index] !== '') {
-                    answers[q.id] = String(responses[index]);
+                const response = responses[index];
+                if (response !== null && response !== undefined && response !== '') {
+                    answers[q.id] = String(response);
+                    answer_timestamps[q.id] = Math.floor(Date.now() / 1000);
                 }
                 if (questionStatuses[index] === 'review' || questionStatuses[index] === 'answered-review') {
                     marked_for_review.push(q.id);
                 }
             });
 
-            const time_taken_seconds = Math.max(0, totalDurationSeconds - Math.max(timeRemainingSeconds, 0));
+            const time_taken_seconds = startedAtSeconds
+                ? Math.max(0, Math.floor(Date.now() / 1000) - startedAtSeconds)
+                : 0;
 
             await api.request('/submissions', 'POST', {
                 exam_id: examId,
                 attempt_id: attemptData.id,
-                answers,
-                marked_for_review,
-                answer_timestamps: {},
-                time_taken_seconds,
+                answers: answers,
+                marked_for_review: marked_for_review,
+                answer_timestamps: answer_timestamps,
+                time_taken_seconds: time_taken_seconds,
             });
             clearDraftSnapshot();
             if (silent) {
@@ -807,7 +815,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 await notify.alert("Exam submitted successfully!", { icon: 'success' });
                 window.location.href = `/results?id=${examId}`;
             }
-
         } catch (error) {
             if (silent) throw error; // outage auto-submit retries in the background
             notify.error("Failed to submit exam: " + error.message);

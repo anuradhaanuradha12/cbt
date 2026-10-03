@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QForge - Downloads &amp; Export</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Gabarito:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .page-container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 2rem 4rem;
+            width: 100%;
+        }
+
+        .hero {
+            background: linear-gradient(135deg, var(--primary) 0%, #8b5cf6 55%, #a855f7 100%);
+            border-radius: var(--radius-lg);
+            padding: 2.5rem;
+            color: #fff;
+            margin-bottom: 2.5rem;
+            box-shadow: 0 12px 32px -12px rgba(88, 70, 246, 0.55);
+        }
+
+        .hero h1 {
+            font-size: 2.25rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            margin-bottom: 0.5rem;
+        }
+
+        .hero p {
+            opacity: 0.92;
+            max-width: 62ch;
+            line-height: 1.6;
+        }
+
+        .section-title {
+            font-size: 0.8rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 1rem;
+        }
+
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .dl-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.85rem;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+        }
+
+        .dl-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--border-focus);
+            box-shadow: 0 12px 24px -12px rgba(0, 0, 0, 0.25);
+        }
+
+        .dl-icon {
+            width: 46px;
+            height: 46px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--primary-light);
+            color: var(--primary);
+        }
+
+        .dl-card h3 {
+            font-size: 1.15rem;
+            font-weight: 600;
+        }
+
+        .dl-card p {
+            color: var(--text-secondary);
+            font-size: 0.92rem;
+            line-height: 1.55;
+            flex: 1;
+        }
+
+        .tag {
+            align-self: flex-start;
+            padding: 0.2rem 0.7rem;
+            border-radius: 9999px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            background: var(--primary-light);
+            color: var(--primary);
+        }
+
+        .tag.green { background: #ecfdf5; color: #047857; }
+        .tag.amber { background: #fffbeb; color: #b45309; }
+
+        .dl-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.6rem;
+            margin-top: 0.25rem;
+        }
+
+        .btn-dl {
+            padding: 0.6rem 1.1rem;
+            border-radius: var(--radius-sm);
+            border: 1px solid transparent;
+            font-size: 0.88rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            transition: background 0.15s ease, transform 0.15s ease;
+            font-family: inherit;
+        }
+
+        .btn-dl:active { transform: translateY(1px); }
+
+        .btn-primary-dl { background: var(--primary); color: #fff; }
+        .btn-primary-dl:hover { background: var(--primary-hover); }
+
+        .btn-outline-dl {
+            background: transparent;
+            color: var(--text-secondary);
+            border-color: var(--border);
+        }
+        .btn-outline-dl:hover { background: var(--bg-input); color: var(--text-primary); }
+
+        .status-strip {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-left: 3px solid var(--success);
+            border-radius: var(--radius-md);
+            padding: 1rem 1.25rem;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .status-dot {
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            background: var(--success);
+            flex-shrink: 0;
+        }
+
+        .status-strip.offline { border-left-color: var(--danger); }
+        .status-strip.offline .status-dot { background: var(--danger); }
+    </style>
+</head>
+<body>
+    <div class="page-container">
+
+        <header style="display:flex; justify-content:space-between; align-items:center; padding:1.5rem 0;">
+            <div class="logo" style="display:flex; align-items:center; gap:0.6rem; font-size:1.35rem; font-weight:700; color:var(--primary);">
+                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
+                </svg>
+                <span>QForge</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:1rem;">
+                <span id="userName" style="color:var(--text-secondary); font-size:0.92rem;"></span>
+                <button class="btn-outline-dl" id="btnLogout" style="padding:0.45rem 0.9rem;">Sign Out</button>
+            </div>
+        </header>
+
+        <section class="hero">
+            <h1>Downloads &amp; Export</h1>
+            <p>Every export the platform offers, in one place — question PDFs, browser printing, and bulk student data — without hunting through menus.</p>
+        </section>
+
+        <div class="section-title">Question Forge exports</div>
+        <div class="card-grid">
+            <article class="dl-card" id="card-pdf">
+                <div class="dl-icon">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                    </svg>
+                </div>
+                <span class="tag">PDF</span>
+                <h3>Question PDF</h3>
+                <p>Export any generated or approved question as a print-ready A4 PDF, with options A–D, the correct answer highlighted and the explanation included. Images are embedded at full resolution.</p>
+                <div class="dl-actions">
+                    <a class="btn-dl btn-primary-dl" href="/question-gen" id="btnOpenForge">Open Question Forge →</a>
+                </div>
+            </article>
+
+            <article class="dl-card" id="card-print">
+                <div class="dl-icon">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                        <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                        <rect x="6" y="14" width="12" height="8"></rect>
+                    </svg>
+                </div>
+                <span class="tag amber">Browser</span>
+                <h3>Print a question</h3>
+                <p>Send a question straight to your printer or “Save as PDF” dialog. The app chrome is stripped automatically so only the question, options and solution are printed.</p>
+                <div class="dl-actions">
+                    <a class="btn-dl btn-outline-dl" href="/question-gen" id="btnOpenForgePrint">Open Question Forge →</a>
+                </div>
+            </article>
+        </div>
+
+        <div class="section-title">People &amp; data exports</div>
+        <div class="card-grid">
+            <article class="dl-card" id="card-csv">
+                <div class="dl-icon">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                </div>
+                <span class="tag green">CSV</span>
+                <h3>Student import template</h3>
+                <p>Download the <code>name,email,password</code> CSV template, fill it in, then upload it in the admin panel to provision student accounts in bulk.</p>
+                <div class="dl-actions">
+                    <button class="btn-dl btn-primary-dl" id="btnDownloadCsv">Download student_template.csv</button>
+                    <a class="btn-dl btn-outline-dl" href="/admin" id="btnOpenAdmin">Open Admin →</a>
+                </div>
+            </article>
+
+            <article class="dl-card" id="card-guide">
+                <div class="dl-icon">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="16" x2="12" y2="12"></line>
+                        <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                    </svg>
+                </div>
+                <span class="tag">CSV</span>
+                <h3>Bulk upload rules</h3>
+                <p>The template must keep its header row and include at least one user row, with a name, email and password column. Accounts are created for your college only; existing emails are skipped rather than overwritten.</p>
+                <div class="dl-actions">
+                    <a class="btn-dl btn-outline-dl" href="/admin" id="btnOpenAdminUsers">Open Admin → Users</a>
+                </div>
+            </article>
+        </div>
+
+        <div class="status-strip" id="statusStrip">
+            <span class="status-dot"></span>
+            <span id="statusText">Checking API availability…</span>
+        </div>
+
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/downloads.js"></script>
+</body>
+</html>

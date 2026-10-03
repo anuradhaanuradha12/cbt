@@ -765,10 +765,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                     // Light theme: readable slate body on a soft indigo tint,
                     // emerald accents for the answer line.
                     solutionHtml = `
-                        <div class="solution-block hidden mt-4 p-4 bg-indigo-50 border border-indigo-100 rounded-lg text-sm">
+<div class="solution-block hidden mt-4 p-4 bg-indigo-50 border border-indigo-100 rounded-lg text-sm">
                             <div class="font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded px-2 py-1 inline-block mb-2">Correct Answer: ${q.correct_answer ? q.correct_answer.toUpperCase() : '—'}</div>
                             ${q.explanation ? `<div class="text-gray-800 leading-relaxed mt-2 whitespace-pre-wrap">${api.renderRichText(q.explanation)}</div>` : ''}
-                            ${q.explanation_image_r2_key ? `<img src="/images/${q.explanation_image_r2_key}?v=${q.updated_at ?? ''}" class="mt-3 max-h-48 rounded border border-gray-200 bg-white" alt="Solution Image" onerror="this.replaceWith(Object.assign(document.createElement('span'),{textContent:'[image unavailable — hard-refresh: Ctrl+Shift+R]',className:'text-xs text-gray-400'}))">` : ''}
+                            ${q.explanation_image_r2_key ? `<img src="${api.imageUrl(q.explanation_image_r2_key)}?v=${q.updated_at ?? ''}" class="mt-3 max-h-48 rounded border border-gray-200 bg-white" alt="Solution Image" onerror="this.replaceWith(Object.assign(document.createElement('span'),{textContent:'[image unavailable — hard-refresh: Ctrl+Shift+R]',className:'text-xs text-gray-400'}))">` : ''}
                         </div>
                     `;
                 }
@@ -787,8 +787,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     </button>
                     ` : (user.role === 'faculty' ? `<span class="absolute top-4 right-4 text-xs font-semibold px-4 py-2 rounded-lg bg-gray-100 text-gray-500 border border-gray-200 cursor-not-allowed" title="Select a blueprint from Pending Tasks first">Select Blueprint First</span>` : '')}
 
-                    <div class="text-sm text-gray-900 mt-2 font-medium leading-relaxed">${api.renderRichText(q.question_text)}</div>
-                    ${q.image_r2_key ? `<img src="/images/${q.image_r2_key}?v=${q.updated_at ?? ''}" class="mt-3 max-h-48 rounded border border-gray-300" alt="Question Image" onerror="this.replaceWith(Object.assign(document.createElement('span'),{textContent:'[image unavailable — hard-refresh: Ctrl+Shift+R]',className:'text-xs text-gray-400'}))">` : ''}
+<div class="text-sm text-gray-900 mt-2 font-medium leading-relaxed">${api.renderRichText(q.question_text)}</div>
+                    ${q.image_r2_key ? `<img src="${api.imageUrl(q.image_r2_key)}?v=${q.updated_at ?? ''}" class="mt-3 max-h-48 rounded border border-gray-300" alt="Question Image" onerror="this.replaceWith(Object.assign(document.createElement('span'),{textContent:'[image unavailable — hard-refresh: Ctrl+Shift+R]',className:'text-xs text-gray-400'}))">` : ''}
                     
                     ${optionsHtml}
                     

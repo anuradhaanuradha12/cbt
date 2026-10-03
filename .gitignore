@@ -35,6 +35,15 @@ worker/migrate-images.ts
 worker/restore-text.mjs
 
 INTERNAL_README.md
+enhanced-images/
+
+# Nested project copy + generated test artifacts
+cbt-main/
+worker/test-results/
+
+# Local-only tooling: strips the source site watermark from scraped images.
+# Kept out of the repo deliberately.
+worker/watermark.mjs
 
 # Large audit binaries
 worker/scripts/audit_data/*.parquet

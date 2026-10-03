@@ -92,8 +92,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                             ${statusText} (${ans.marks_awarded > 0 ? '+' : ''}${ans.marks_awarded} marks)
                         </span>
                     </div>
-                    <div class="whitespace-pre-wrap">${api.renderRichText(ans.question_text)}</div>
-                    ${ans.image_r2_key ? `<img src="/images/${ans.image_r2_key}?v=${ans.updated_at ?? ''}" class="mt-3 max-h-64 rounded border border-gray-300" alt="Question Image" onerror="this.replaceWith(Object.assign(document.createElement('span'),{textContent:'[image unavailable — hard-refresh: Ctrl+Shift+R]',className:'text-xs text-gray-400'}))">` : ''}
+<div class="whitespace-pre-wrap">${api.renderRichText(ans.question_text)}</div>
+                    ${ans.image_r2_key ? `<img src="${api.imageUrl(ans.image_r2_key)}?v=${ans.updated_at ?? ''}" class="mt-3 max-h-64 rounded border border-gray-300" alt="Question Image" onerror="this.replaceWith(Object.assign(document.createElement('span'),{textContent:'[image unavailable — hard-refresh: Ctrl+Shift+R]',className:'text-xs text-gray-400'}))">` : ''}
                     <div style="margin-top: 1rem;">
                         ${optionsHtml}
                     </div>
@@ -104,8 +104,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     ${ans.explanation ? `
                         <div class="explanation whitespace-pre-wrap">
                             <strong>Explanation:</strong><br>
-                            ${api.renderRichText(ans.explanation)}
-                            ${ans.explanation_image_r2_key ? `<br><img src="/images/${ans.explanation_image_r2_key}" class="mt-3 max-h-48 rounded border border-gray-300" alt="Solution Image">` : ''}
+${api.renderRichText(ans.explanation)}
+                            ${ans.explanation_image_r2_key ? `<br><img src="${api.imageUrl(ans.explanation_image_r2_key)}" class="mt-3 max-h-48 rounded border border-gray-300" alt="Solution Image">` : ''}
                         </div>
                     ` : ''}
                 `;
