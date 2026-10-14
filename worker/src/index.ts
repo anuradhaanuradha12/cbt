@@ -11,6 +11,7 @@ import { usersRouter } from './routes/users';
 import { analyticsRouter } from './routes/analytics';
 import { imagesRouter } from './routes/images';
 import { forgeRouter } from './routes/forge';
+import { printRouter } from './routes/print';
 import { handleSubmissionsBatch } from './queue/submission-consumer';
 import { handleScoringBatch } from './queue/scoring-consumer';
 import { json, json404, handleOptions } from './middleware/responses';
@@ -54,6 +55,7 @@ export default {
       response ??= await analyticsRouter(request, env, pathname);
       response ??= await imagesRouter(request, env, pathname);
       response ??= await forgeRouter(request, env, pathname);
+      response ??= await printRouter(request, env, pathname);
 
       if (pathname === '/admin/reconciliation/reset-dlq' && request.method === 'POST') {
         await env.CBT_KV.put('dlq_counter:cbt-submissions-dlq', '0');

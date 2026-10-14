@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QForge - Printable Question Paper</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .print-shell {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+    .print-shell h1 { margin-bottom: 0.25rem; }
+    .print-meta {
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+      margin-bottom: 1.5rem;
+    }
+    .print-actions {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      margin-bottom: 1.5rem;
+    }
+    .print-preview {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 1rem;
+      background: var(--bg-card);
+      min-height: 280px;
+    }
+    .print-preview .ph-loading {
+      color: var(--text-secondary);
+      text-align: center;
+      padding: 3rem 0;
+    }
+    .ph-error {
+      color: var(--danger);
+      font-size: 0.9rem;
+      padding: 0.5rem 0;
+    }
+    .ph-questions {
+      max-height: 420px;
+      overflow: auto;
+    }
+    .ph-questions .pc-q {
+      margin-bottom: 0.6rem;
+      border-bottom: 1px dashed var(--border);
+      padding-bottom: 0.6rem;
+    }
+    .ph-questions .pc-q .pc-qnum {
+      font-weight: 600;
+      color: var(--primary);
+    }
+    .ph-questions .pc-opts {
+      margin-top: 0.3rem;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0.15rem;
+    }
+    .ph-questions .pc-opt {
+      display: flex;
+      align-items: baseline;
+      gap: 0.6rem;
+      font-size: 0.92rem;
+    }
+    .ph-questions .pc-bubble {
+      width: 10px;
+      height: 10px;
+      border: 1px solid var(--text-secondary);
+      border-radius: 50%;
+      background: #fff;
+      flex: 0 0 auto;
+    }
+    .ph-questions .pc-label {
+      font-weight: 600;
+      width: 14px;
+    }
+    .ph-questions .pc-text { flex: 1 1 auto; }
+    .ph-omr {
+      margin-top: 1rem;
+      border-top: 1px solid var(--border);
+      padding-top: 1rem;
+    }
+    .ph-omr-title {
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-secondary);
+      margin-bottom: 0.5rem;
+    }
+    .ph-omr-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 0.4rem 1rem;
+    }
+    .ph-omr-row {
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.35rem 0.5rem;
+      background: #fff;
+    }
+    .ph-omr-row-head {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      margin-bottom: 0.2rem;
+      border-bottom: 1px dashed var(--border);
+      padding-bottom: 0.2rem;
+    }
+    .ph-omr-bubbles {
+      display: flex;
+      gap: 0.6rem;
+      align-items: center;
+    }
+    .ph-omr-bubbles span {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      font-size: 0.82rem;
+    }
+    .status-line {
+      margin-top: 1rem;
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+    }
+    .status-line.error { color: var(--danger); }
+  </style>
+</head>
+<body>
+  <div class="print-shell">
+    <h1>Printable Question Paper</h1>
+    <div class="print-meta" id="printMeta"></div>
+
+    <div class="print-actions">
+      <button class="btn-primary" id="btnPrint">Print Question Paper</button>
+      <button class="btn-secondary" id="btnPrintOmr">Print OMR Sheet</button>
+      <button class="btn-secondary" id="btnDownloadOmr">Download OMR PNG</button>
+      <a class="btn-outline" id="btnScanOmr" href="scan.html">Scan OMR Sheet →</a>
+    </div>
+
+    <div class="print-preview">
+      <div id="phLoading" class="ph-loading">Loading question paper…</div>
+      <div id="phError" class="ph-error" style="display:none"></div>
+      <div id="phQuestions" class="ph-questions" style="display:none"></div>
+      <div id="phOmr" class="ph-omr" style="display:none"></div>
+    </div>
+
+    <div class="status-line" id="statusLine"></div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script src="js/print.js"></script>
+</body>
+</html>

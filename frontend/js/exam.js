@@ -24,9 +24,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // State Variables
     let examData = null;
+    let examQuestions = [];
     let attemptData = null;
     let attemptStartedAt = null; // epoch seconds captured when attempt starts
     let questions = [];
+    let startedAtSeconds = 0;
     let fetchedQuestions = [];
 
     // GET /exams/:id returns a parsed `config` object; older rows may only carry
